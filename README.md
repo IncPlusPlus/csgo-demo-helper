@@ -1,1 +1,2 @@
-"# csgo-utils" 
+# CS:GO QOS Utils
+This is a collection of tools that I (will, when they're complete) use when I play Counter-Strike: Global Offensive. They're mostly for helping with recording demos properly. Proper instructions on how to use these yourself coming soon.
