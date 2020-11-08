@@ -12,3 +12,19 @@
  * This helper will echo info into the demo (so long as demo_recordcommands is set to 1) which it will pick up on when
  * playing these demos back. When playing demos back,
  */
+
+const demoRecordingEndRegExp = RegExp('^Completed demo, recording time \\d+\\.\\d+, game frames \\d+\\.$');
+
+const monitorConsole = async () => {
+    const socket = net.connect(port, '127.0.0.1');
+    socket.setEncoding('utf8');
+    const reader = readline.createInterface({
+        input: socket,
+        crlfDelay: Infinity
+    });
+    for await (const line of reader) {
+        if (demoRecordingEndRegExp.test(line)) {
+            //do whatever needs to be done in this case. I forgot what I was gonna do with this info. It's late. I need sleep.
+        }
+    }
+}
