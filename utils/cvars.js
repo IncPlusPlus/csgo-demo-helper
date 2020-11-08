@@ -75,7 +75,7 @@ const getVoicePlayerVolumeValues = async () => {
     }
 }
 
-(async () => {
-    let output = await getVoicePlayerVolumeValues();
-    console.log(output);
-})();
+// (async () => {
+//     let output = await getVoicePlayerVolumeValues();
+//     console.log(output);
+// })();

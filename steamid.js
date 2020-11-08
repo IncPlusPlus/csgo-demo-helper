@@ -20,7 +20,7 @@ let getPlayerProfileName = async () => {
     return playerName;
 }
 
-(async () => {
-    let name = await getPlayerProfileName();
-    console.log(name);
-})();
+// (async () => {
+//     let name = await getPlayerProfileName();
+//     console.log(name);
+// })();
