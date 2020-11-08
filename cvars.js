@@ -21,38 +21,24 @@ const voicePlayerVolumeRegExp = RegExp('(\\d+)\ +(.*)\ +(\\d\\.\\d{2})')
 const cvarEchoRegExp = RegExp('^\"([a-zA-Z_]+)\" = \"(\\d+)\".*');
 const mapFromStatusRegExp = RegExp('^map\ +: ([a-zA-Z_]+) at:.*');
 const port = config.csgo.netcon_port;
+const gameModeStrings = [
+    ["casual", "armsrace", "training", "custom", "cooperative", "skirmish"],
+    ["competitive", "demolition"],
+    ["wingman", "deathmatch"]
+];
 
 
+/**
+ * See https://totalcsgo.com/command/gametype
+ * @returns {Promise<string>} the human friendly summarization of what
+ * game mode is being played. This ignores the case of Scrim Competitive 5v5
+ * and will always refer to Scrim Competitive 5v5 and 2v2 as "wingman".
+ */
 const getGameModeString = async () => {
     const gameMode = await getCvar('game_mode');
     const gameType = await getCvar('game_type');
 
-    /*
-     * This is horrible. I know. I'm sorry.
-     * https://totalcsgo.com/command/gametype
-     */
-    if (gameType === 0 && gameMode === 0) {
-        return "casual";
-    } else if (gameType === 0 && gameMode === 1) {
-        return "competitive";
-    } else if (gameType === 0 && gameMode === 2) {
-        //This ignores the scrim competitive 5v5 case
-        return "wingman";
-    } else if (gameType === 1 && gameMode === 0) {
-        return "armsrace";
-    } else if (gameType === 1 && gameMode === 1) {
-        return "demolition";
-    } else if (gameType === 1 && gameMode === 2) {
-        return "deathmatch";
-    } else if (gameType === 2 && gameMode === 0) {
-        return "training";
-    } else if (gameType === 3 && gameMode === 0) {
-        return "custom";
-    } else if (gameType === 4 && gameMode === 0) {
-        return "cooperative";
-    } else if (gameType === 5 && gameMode === 0) {
-        return "skirmish";
-    }
+    return gameModeStrings[gameMode][gameType];
 }
 
 const getCvar = async (cvarName) => {
