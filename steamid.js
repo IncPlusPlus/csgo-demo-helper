@@ -15,9 +15,13 @@ let getPlayerProfileName = async () => {
         // console.log(response.data.name);
         playerName = response.data.response["players"][0]["personaname"];
     } catch (error) {
-        console.log(error.response.body);
+        console.log(error);
     }
     return playerName;
+}
+
+module.exports = steamid = {
+    getPlayerProfileName
 }
 
 // (async () => {
