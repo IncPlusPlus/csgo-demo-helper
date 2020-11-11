@@ -12,13 +12,14 @@ const net = require('net');
 const readline = require('readline');
 const ini = require('ini');
 const fs = require('fs');
+const subMan = require('./subscriber_manager.js');
+const util = require('util');
 
 const config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
 
 const whitespaceRegExp = /\s{2,}/g;
 const paddingDashesRegExp = RegExp('-{2,}');
 const voicePlayerVolumeRegExp = RegExp('(\\d+)\ +(.*)\ +(\\d\\.\\d{2})')
-const cvarEchoRegExp = RegExp('^\"([a-zA-Z_]+)\" = \"(\\d+)\".*');
 const mapFromStatusRegExp = RegExp('^map\ +: ([a-zA-Z_]+) at:.*');
 const port = config.csgo.netcon_port;
 const gameModeStrings = [
@@ -42,23 +43,12 @@ const getGameModeString = async () => {
 }
 
 const getCvar = async (cvarName) => {
-    const socket = net.connect(port, '127.0.0.1');
-    socket.setEncoding('utf8');
-    const reader = readline.createInterface({
-        input: socket,
-        crlfDelay: Infinity
-    });
-    socket.write(`${cvarName}\n`);
-    for await (const line of reader) {
-        if (cvarEchoRegExp.test(line)) {
-            let cvarOutput = cvarEchoRegExp.exec(line);
-            if (cvarOutput[1] === cvarName) {
-                reader.close();
-                socket.end();
-                return Number(cvarOutput[2]);
-            }
-        }
-    }
+    const requestValue = util.promisify(subMan.requestCvarValue);
+    //This is dumb and needs to be fixed. There's a slim chance that the output from sending the message will be missed
+    //before requestValue finishes up subscribing
+    subMan.sendMessage(cvarName);
+    let outval = await requestValue(cvarName);
+    return outval;
 }
 
 const setCvar = (cvarName, value) => {
@@ -70,7 +60,12 @@ const setCvar = (cvarName, value) => {
 
 const setVoicePlayerVolumeByName = async (playerName, volume) => {
     let players = await getVoicePlayerVolumeValues();
-    await setVoicePlayerVolume(players.find(value => value.PlayerName === playerName).PlayerNumber, volume);
+    const player = players.find(value => value.PlayerName === playerName);
+    if(!player) {
+        console.log(`Couldn't find player with name '${playerName}'.`)
+    } else {
+        await setVoicePlayerVolume(player.PlayerNumber, volume);
+    }
 }
 
 const setVoicePlayerVolume = async (playerNumber, volume) => {
