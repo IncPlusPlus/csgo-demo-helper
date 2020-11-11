@@ -20,7 +20,7 @@ const net = require('net');
 const readline = require('readline');
 const ini = require('ini');
 const fs = require('fs');
-const consoleHelper = require('./utils/console_helper.js')
+const consoleHelper = require('./utils/ConsoleHelper.ts')
 
 const config = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
 const port = config.csgo.netcon_port;
