@@ -62,7 +62,7 @@ export class DemoRecordingHelper implements ListenerService {
         }
         //Decrement by 1 because the above loop continues until a demo with highestPartNumber cannot be found. Therefore, decrementing this by 1 makes this point to a valid, existing demo.
         highestPartNumber--;
-        return [highestDemoNumber, highestDemoNumber];
+        return [highestDemoNumber, highestPartNumber];
     }
 
     private static mostRecentDemoInfoToString(demoName: string, existingDemoInfo: Pair<number, number>): string {
