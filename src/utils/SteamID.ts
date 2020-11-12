@@ -1,12 +1,11 @@
 import axios from 'axios';
-import {parse} from 'ini';
-import {readFileSync} from 'fs';
+import {Config} from "./Config";
 
 export class SteamID {
-    private static readonly config : { [p: string]: any } = parse(readFileSync('./config.ini', 'utf-8'));
-    private static readonly steamWebAPIKey : string = SteamID.config.steam.steam_web_api_key;
-    private static readonly steamID64 : string = SteamID.config.steam.steamID64;
-    private static readonly GetPlayerSummariesV0002 : string = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/";
+    private static readonly config: { [p: string]: any } = Config.getConfig();
+    private static readonly steamWebAPIKey: string = SteamID.config.steam.steam_web_api_key;
+    private static readonly steamID64: string = SteamID.config.steam.steamID64;
+    private static readonly GetPlayerSummariesV0002: string = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/";
 
     public static async getPlayerProfileName(): Promise<string> {
         let playerName;

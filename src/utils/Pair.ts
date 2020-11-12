@@ -1,0 +1,1 @@
+type Pair<T, K> = [T, K];

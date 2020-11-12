@@ -10,52 +10,25 @@
  */
 import * as readline from 'readline';
 import * as net from 'net';
-import * as ini from 'ini';
-import * as fs from 'fs';
 // const util = require('util');
 import {SubscriberManager} from './SubscriberManager';
+import {Logger} from "./Logger";
+import {Config} from "./Config";
 
 export class Cvars {
-    private static readonly config: { [p: string]: any } = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
+    private static readonly config: { [p: string]: any } = Config.getConfig();
     private static readonly whitespaceRegExp: RegExp = /\s{2,}/g;
     private static readonly paddingDashesRegExp: RegExp = RegExp('-{2,}');
     private static readonly voicePlayerVolumeRegExp: RegExp = RegExp('(\\d+)\ +(.*)\ +(\\d\\.\\d{2})')
-    private static readonly mapFromStatusRegExp: RegExp = RegExp('^map\ +: ([a-zA-Z_]+) at:.*');
     private static readonly port: number = Cvars.config.csgo.netcon_port;
-    private static readonly gameModeStrings: string[][] = [
-        ["casual", "armsrace", "training", "custom", "cooperative", "skirmish"],
-        ["competitive", "demolition"],
-        ["wingman", "deathmatch"]
-    ];
-
-
-    /**
-     * See https://totalcsgo.com/command/gametype
-     * @returns {Promise<string>} the human friendly summarization of what
-     * game mode is being played. This ignores the case of Scrim Competitive 5v5
-     * and will always refer to Scrim Competitive 5v5 and 2v2 as "wingman".
-     */
-    public static getGameModeString = async (): Promise<string> => {
-        const gameMode: number = Number(await Cvars.getCvar('game_mode'));
-        const gameType: number = Number(await Cvars.getCvar('game_type'));
-
-        return Cvars.gameModeStrings[gameMode][gameType];
-    }
 
     public static getCvar = async (cvarName: string): Promise<number> => {
-        // const requestValue = util.promisify(subMan.requestCvarValue);
-        //This is dumb and needs to be fixed. There's a slim chance that the output from sending the message will be missed
-        //before requestValue finishes up subscribing
-        // SubscriberManager.sendMessage(cvarName);
         let outval = await SubscriberManager.requestCvarValue(cvarName);
         return outval;
     }
 
     public static setCvar = (cvarName: string, value: string) => {
-        const socket = net.connect(Cvars.port, '127.0.0.1');
-        socket.setEncoding('utf8');
-        socket.write(`${cvarName} ${value}\n`);
-        socket.end();
+        SubscriberManager.sendMessage(`${cvarName} ${value}\n`);
     }
 
     public static setVoicePlayerVolumeByName = async (playerName: string, volume: number) => {
@@ -121,7 +94,7 @@ export class Cvars {
                         players.push(playerVolume);
                     }
                 } else {
-                    //TODO: ADD WARNING
+                    Logger.warn('Failed to split output for player volume info using RegExp.exec()');
                 }
             }
             if (isVoicePlayerVolumePadding(line)) {
@@ -129,36 +102,8 @@ export class Cvars {
                 players = [];
             }
         }
-        throw Error("Finished for loop in getVoicePlayerVolumeValues but coudln't return a value for some reason.");
+        throw Error("Finished for loop in getVoicePlayerVolumeValues but couldn't return a value for some reason.");
     }
-
-    //TODO: Make getting the map name one of the special data receivers
-    // public static getMapName = async (excludePrefix: boolean) : Promise<string> => {
-    //     const socket = net.connect(Cvars.port, '127.0.0.1');
-    //     socket.setEncoding('utf8');
-    //     const reader = readline.createInterface({
-    //         input: socket,
-    //         crlfDelay: Infinity
-    //     });
-    //     socket.write('status\n');
-    //     for await (const line of reader) {
-    //         if (Cvars.mapFromStatusRegExp.test(line)) {
-    //             let mapLine = Cvars.mapFromStatusRegExp.exec(line);
-    //             reader.close();
-    //             socket.end();
-    //             if(mapLine) {
-    //                 if (excludePrefix) {
-    //                     return mapLine[1].substr(mapLine[1].indexOf('_') + 1);
-    //                 } else {
-    //                     return mapLine[1];
-    //                 }
-    //             } else {
-    //                 //TODO: WARN HERE
-    //                 return 'UNKNOWN';
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 // (async () => {

@@ -5,20 +5,21 @@
  */
 import * as readline from 'readline';
 import * as net from 'net';
-import * as ini from 'ini';
-import * as fs from 'fs';
 import * as uuid from 'uuid';
 import * as util from 'util';
 import pDefer = require('p-defer');
-// const { v4: uuidv4 } = require('uuid');
 import {Logger} from "./Logger";
-const waitOn = require("wait-on");
-type Pair<T,K> = [T,K];
-export class SubscriberManager {
+import {Interface} from "readline";
+import {Config} from "./Config";
 
-    private static readonly cvarEchoRegExp : RegExp = RegExp('^\"([a-zA-Z_]+)\" = \"(\\d+)\".*');
-    private static readonly config : { [p: string]: any } = ini.parse(fs.readFileSync('./config.ini', 'utf-8'));
-    private static readonly port : number = SubscriberManager.config.csgo.netcon_port;
+const waitOn = require("wait-on");
+
+
+//TODO: Make the reject method of the promises expire on a timeout to assist with troubleshooting
+export class SubscriberManager {
+    private static readonly cvarEchoRegExp: RegExp = RegExp('^\"([a-zA-Z_]+)\" = \"(\\d+)\".*');
+    private static readonly config: { [p: string]: any } = Config.getConfig();
+    private static readonly port: number = SubscriberManager.config.csgo.netcon_port;
 
 //For use with functions that are expecting the game not to be open yet
     private static readonly waitOnOpts = {
@@ -42,12 +43,19 @@ export class SubscriberManager {
     };
 
     private static socket: net.Socket;
-    private static reader: any;
-    private static subscribers: any[] = [];
+    private static reader: Interface;
+    /** These subscribers are expecting one or more lines of text, unprompted. They're here to stay for the most part. */
+    private static subscribers: ListenerService[] = [];
     /** These subscribers are expecting a single line of output as soon as possible (like a cvar value) */
-    private static subscribedCvarValues : Pair<string, pDefer.DeferredPromise<number>>[] = [];
+    private static subscribedCvarValues: Pair<string, pDefer.DeferredPromise<number>>[] = [];
+    /**
+     * These subscribers act much like the cvar subscribers and are removed once dealt with. A regular expression is
+     * used to determine if the given console output is meant for the temporary subscriber. If there's a match,
+     * the subscriber is removed and the promise is fulfilled with the line output that matched the RegEx.
+     */
+    private static specialOutputGrabbers: Pair<RegExp, pDefer.DeferredPromise<string>>[] = [];
 
-    public static init = async ():Promise<void> => {
+    public static init = async (): Promise<void> => {
         await SubscriberManager.patientlyWaitForConsoleSocket();
         SubscriberManager.socket = net.connect(SubscriberManager.port, '127.0.0.1');
         SubscriberManager.socket.setEncoding('utf8');
@@ -58,13 +66,28 @@ export class SubscriberManager {
     }
 
     public static begin = async () :Promise<void> => {
-        for await (const line of SubscriberManager.reader) {
+        for await (const rawLine of SubscriberManager.reader) {
+            const line = rawLine.trimEnd();
+            let lineHandledBySpecialOutputGrabber: boolean = false;
+            for (let i = 0; i < SubscriberManager.specialOutputGrabbers.length; i++) {
+                if (SubscriberManager.specialOutputGrabbers[i][0].test(line)) {
+                    Logger.fine(`Selected output grabber '${SubscriberManager.specialOutputGrabbers[i]}' to handle line '${line}'.`)
+                    SubscriberManager.specialOutputGrabbers[i][1].resolve(line);
+                    SubscriberManager.specialOutputGrabbers.splice(i, 1);
+                    lineHandledBySpecialOutputGrabber = true;
+                    break;
+                }
+            }
+            if (lineHandledBySpecialOutputGrabber) {
+                //Don't bother handing the line value to anyone else. Await the next line of console output
+                continue;
+            }
             const lineIsACvarValue = SubscriberManager.cvarEchoRegExp.test(line);
             let lineHandledByCvarListener = false;
             let cvarName, cvarValue;
-            if(lineIsACvarValue) {
+            if (lineIsACvarValue) {
                 const cvarOutput = SubscriberManager.cvarEchoRegExp.exec(line);
-                if(cvarOutput) {
+                if (cvarOutput) {
                     cvarName = cvarOutput[1];
                     cvarValue = cvarOutput[2];
                 } else {
@@ -86,29 +109,23 @@ export class SubscriberManager {
                 continue;
             for(let i = 0; i <= SubscriberManager.subscribers.length; i++) {
                 if(i === SubscriberManager.subscribers.length) {
-                    Logger.fine(`No suitable subscriber found for message: ${line}`);
+                    Logger.finest(`No suitable subscriber found for message: ${line}`);
                 }else {
                     /*
                      * If the subscribed callback returns true, it means that it is responsible for handling
                      * the provided message. If it returns false, we should keep iterating over our subscribers to find
                      * which
                      */
-                    if(SubscriberManager.subscribers[i](line)){
+                    if (SubscriberManager.subscribers[i].canHandle(line)) {
+                        Logger.fine(`Selected listener '${SubscriberManager.subscribers[i]}' to handle line '${line}'.`)
                         //We've found a suitable method to handle the message
+                        SubscriberManager.subscribers[i].handleLine(line).then(() => Logger.fine(`Listener '${SubscriberManager.subscribers[i]}' finished handling line '${line}'.`));
                         break;
                     }
                 }
             }
         }
     }
-
-
-
-
-
-
-
-
 
     public static patientlyWaitForConsoleSocket = async () => {
         await SubscriberManager.waitForConsoleSocket(true);
@@ -136,44 +153,46 @@ export class SubscriberManager {
      * Write one or many commands to the console.
      * @param commandOrArray a single string or an array of strings to be written to the console
      */
-    public static sendMessage = (commandOrArray: any) => {
-
+    public static sendMessage = (commandOrArray: string | string[]) => {
         if (Array.isArray(commandOrArray)) {
             for (let command of commandOrArray) {
                 Logger.writingToCStrikeConsole(command);
                 SubscriberManager.socket.write(`${command}\n`);
             }
+            //TODO: Research how to PROPERLY use varargs in TypeScript :)
         } else if (typeof commandOrArray === 'string') {
             Logger.writingToCStrikeConsole(commandOrArray);
             SubscriberManager.socket.write(`${commandOrArray}\n`);
-        } else if (commandOrArray instanceof String) {
-            throw 'idiot over the fence';
-            // Logger.writingToCStrikeConsole(commandOrArray);
-            // SubscriberManager.socket.write(`${commandOrArray}\n`);
-        } else {
-            console.log("Unsupported object type sent to 'writeCommand' function.");
         }
     }
 
-    public static requestCvarValue = (cvarName: string) : Promise<number> => {
-        const deferred : pDefer.DeferredPromise<number> = pDefer();
+    public static requestCvarValue = (cvarName: string): Promise<number> => {
+        const deferred: pDefer.DeferredPromise<number> = pDefer();
         SubscriberManager.subscribedCvarValues.push([cvarName, deferred]);
         SubscriberManager.sendMessage(cvarName);
-        Logger.debug(`Added callback for '${cvarName}' to the temporary subscribers list.`)
+        Logger.debug(`Added '${cvarName}' to the cvar subscribers list.`)
         return deferred.promise;
     }
 
-    public static  subscribe = (callback: any) => {
-        SubscriberManager.subscribers.push(callback);
-        Logger.debug(`Added callback '${callback}' to the subscribers list.`)
+    public static searchForValue = (command: string | string[], regex: RegExp) => {
+        const deferred: pDefer.DeferredPromise<string> = pDefer();
+        SubscriberManager.specialOutputGrabbers.push([regex, deferred]);
+        SubscriberManager.sendMessage(command);
+        Logger.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`)
+        return deferred.promise;
     }
 
-    public static unsubscribe = (callback: any) => {
-        const index = SubscriberManager.subscribers.indexOf(callback);
-        if(index > -1) {
+    public static subscribe = (listener: ListenerService) => {
+        SubscriberManager.subscribers.push(listener);
+        Logger.debug(`Added callback '${listener}' to the subscribers list.`)
+    }
+
+    public static unsubscribe = (listener: ListenerService) => {
+        const index = SubscriberManager.subscribers.indexOf(listener);
+        if (index > -1) {
             SubscriberManager.subscribers.splice(index, 1);
         } else {
-            Logger.warn(`Attempted to unsubscribe callback function '${callback}' but failed.`);
+            Logger.warn(`Attempted to unsubscribe callback function '${listener}' but failed.`);
         }
     }
 
