@@ -31,20 +31,25 @@ export class DemoRecordingHelper implements ListenerService {
     //TODO: Allow user to input command like "dh rec new" to skip the prompt since they'd know if this is a new game or whether they rejoined an existing one
     private static readonly beginRecordingCommand = 'dh rec';
     private static readonly recordSplitOrNewDemoRegExp = RegExp('^dh (new|split|cancel)$');
-    private static readonly resultOfRecordCmdRegExp = RegExp('(Already recording\\.)|(Recording to .*\\.dem\\.\\.\\.)|(Please start demo recording after current round is over\\.)');
+    private static readonly resultOfRecordCmdRegExp = RegExp('(Already recording\\.)|(Recording to (.*)\\.dem\\.\\.\\.)|(Please start demo recording after current round is over\\.)');
     private static readonly beginRecordingAfterNewRoundRegExp = RegExp('dh roundover|0:\\s+Reinitialized \\d+ predictable entities');
+    /** A flag that gets switched on when recording begins and off when recording stops. */
+    private static currentlyRecording = false;
 
     name(): string {
         return DemoRecordingHelper.name;
     }
 
     canHandle(consoleLine: string): boolean {
-        return consoleLine === DemoRecordingHelper.beginRecordingCommand;
+        return consoleLine === DemoRecordingHelper.beginRecordingCommand || DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine);
     }
 
     async handleLine(consoleLine: string): Promise<void> {
         if (consoleLine === DemoRecordingHelper.beginRecordingCommand) {
             await DemoRecordingHelper.handleStartRecord();
+        } else if (DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine)) {
+            DemoRecordingHelper.currentlyRecording = false;
+            Logger.info(consoleLine);
         }
         //when attempting to start the recording process check if we get told to wait for the next round to start to be able to record a demo. Log the fact that recording has to be delayed (both to this console and to the game) but will start when the next round begins. Add a service to wait for the console output indicating a round ended
     }
@@ -152,14 +157,29 @@ export class DemoRecordingHelper implements ListenerService {
         } else if (match[2]) {
             //Recording properly started. All clear
             SubscriberManager.sendMessage(`echo DemoHelper started recording demo successfully!`);
-            Logger.info(`echo DemoHelper started recording demo '${match[2]}' successfully!`);
+            Logger.info(match[2]);
+            Logger.info(`DemoHelper started recording demo '${match[3]}' successfully!`);
+            DemoRecordingHelper.currentlyRecording = true;
             await DemoRecordingHelper.applyRecordingPreferences();
-            Logger.info(`Applied recording preferences and recorded a message in demo '${match[2]}'.`);
-        } else if (match[3]) {
+            Logger.info(`Applied recording preferences and recorded a message in demo '${match[3]}'.`);
+        } else if (match[4]) {
             //Please start demo recording after current round is over.
             SubscriberManager.sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
             await SubscriberManager.searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp);
             await DemoRecordingHelper.attemptStartRecording(demoName);
         }
+    }
+
+    /**
+     * This method is a synchronous way to check if DemoRecordingHelper is facilitating the recording of a demo.
+     * It does _not_ interact with CS:GO's console meaning it can be used without causing a deadlock in
+     * various ListenerService.canHandle() methods.
+     * This method was created for the express purpose of preventing DemoPlaybackHelper from immediately
+     * unmuting the player when recording began (as the message that DemoPlaybackHelper is meant to read is printed
+     * to the console with an echo, intending for it to be read when playing the demo back).
+     * @returns whether DemoRecordingHelper is currently managing the recording of a demo
+     */
+    public static synchronouslyCheckIfRecording(): boolean {
+        return DemoRecordingHelper.currentlyRecording;
     }
 }

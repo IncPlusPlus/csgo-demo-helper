@@ -6,6 +6,7 @@ import {Config} from "../utils/Config";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {Logger} from "../utils/Logger";
 import {SubscriberManager} from "../utils/SubscriberManager";
+import {DemoRecordingHelper} from "./DemoRecordingHelper";
 
 export class DemoPlaybackHelper implements ListenerService {
     // private static readonly demoPlaybackRegExp = RegExp('^Playing demo from (.*)\\.dem\\.$');
@@ -18,7 +19,8 @@ export class DemoPlaybackHelper implements ListenerService {
     }
 
     canHandle(consoleLine: string): boolean {
-        return DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine);
+        return !DemoRecordingHelper.synchronouslyCheckIfRecording() &&
+            DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine);
     }
 
     async handleLine(consoleLine: string): Promise<void> {

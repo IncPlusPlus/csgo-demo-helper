@@ -3,7 +3,7 @@ import {Config} from "./Config";
 export class Logger {
     private static readonly config: { [p: string]: any } = Config.getConfig();
 
-    public static info = (text : string) => {
+    public static info = (text: string) => {
         console.log(`[INFO]: ${text}`);
     }
 
@@ -12,7 +12,7 @@ export class Logger {
     }
 
     public static writingToCStrikeConsole = (text: string) => {
-        Logger.debug(`Writing to CStrike console: '${text}'`);
+        Logger.fine(`Writing to CStrike console: '${text}'`);
     }
 
     public static debug = (text: string) => {
