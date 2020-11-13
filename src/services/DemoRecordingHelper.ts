@@ -21,25 +21,30 @@ import {existsSync} from 'fs';
 import {DemoNamingHelper} from "../utils/DemoNamingHelper";
 import {SubscriberManager} from "../utils/SubscriberManager";
 import {ConsoleHelper} from "../utils/ConsoleHelper";
+import {SteamID} from "../utils/SteamID";
+import {Logger} from "../utils/Logger";
+import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
+import {Cvars} from "../utils/Cvars";
 
 export class DemoRecordingHelper implements ListenerService {
     private static readonly demoRecordingEndRegExp = RegExp('^Completed demo, recording time \\d+\\.\\d+, game frames \\d+\\.$');
-    //A message like this will be echoed right when the demo starts recording.
-    private static readonly playerMutedByDemoHelperRegExp = RegExp('^DemoHelper set the volume of player (.*) to 0\\.$');
     //TODO: Allow user to input command like "dh rec new" to skip the prompt since they'd know if this is a new game or whether they rejoined an existing one
     private static readonly beginRecordingCommand = 'dh rec';
     private static readonly recordSplitOrNewDemoRegExp = RegExp('^dh (new|split|cancel)$');
+    private static readonly resultOfRecordCmdRegExp = RegExp('(Already recording\\.)|(Recording to .*\\.dem\\.\\.\\.)|(Please start demo recording after current round is over\\.)');
+    private static readonly beginRecordingAfterNewRoundRegExp = RegExp('dh roundover|0:\\s+Reinitialized \\d+ predictable entities');
+
+    name(): string {
+        return DemoRecordingHelper.name;
+    }
 
     canHandle(consoleLine: string): boolean {
-        return consoleLine === DemoRecordingHelper.beginRecordingCommand ||
-            DemoRecordingHelper.playerMutedByDemoHelperRegExp.test(consoleLine);
+        return consoleLine === DemoRecordingHelper.beginRecordingCommand;
     }
 
     async handleLine(consoleLine: string): Promise<void> {
         if (consoleLine === DemoRecordingHelper.beginRecordingCommand) {
             await DemoRecordingHelper.handleStartRecord();
-        } else if (DemoRecordingHelper.playerMutedByDemoHelperRegExp.test(consoleLine)) {
-
         }
         //when attempting to start the recording process check if we get told to wait for the next round to start to be able to record a demo. Log the fact that recording has to be delayed (both to this console and to the game) but will start when the next round begins. Add a service to wait for the console output indicating a round ended
     }
@@ -115,6 +120,46 @@ export class DemoRecordingHelper implements ListenerService {
                 //User cancelled the request to record a demo
                 return;
         }
-        SubscriberManager.sendMessage(`record ${demoName}`);
+        await DemoRecordingHelper.attemptStartRecording(demoName);
+    }
+
+    private static async applyRecordingPreferences() {
+        Logger.info("Applying recording preferences...");
+        if (Config.getConfig().demo_recording_helper.record_my_voice_in_demos === "1") {
+            Cvars.setCvar('voice_loopback', "1");
+        } else {
+            Cvars.setCvar('voice_loopback', "0");
+        }
+        const myName = await SteamID.getPlayerProfileName();
+        if (Config.getConfig().demo_recording_helper.mute_my_voice_while_recording === "1") {
+            await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 0);
+            SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 0.`);
+        } else {
+            await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 1);
+            SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 1.`);
+        }
+        Logger.info("Finished applying recording preferences.");
+    }
+
+    private static async attemptStartRecording(demoName: string) {
+        const recordResultLine = await SubscriberManager.searchForValue(`record ${demoName}`, DemoRecordingHelper.resultOfRecordCmdRegExp);
+        const match = DemoRecordingHelper.resultOfRecordCmdRegExp.exec(recordResultLine);
+        if (!match)
+            throw Error('The match for the expected result of running the record command came back null. What are you doing, man?');
+        if (match[1]) {
+            //Already recording
+            SubscriberManager.sendMessage('echo Already recording a demo!!');
+        } else if (match[2]) {
+            //Recording properly started. All clear
+            SubscriberManager.sendMessage(`echo DemoHelper started recording demo successfully!`);
+            Logger.info(`echo DemoHelper started recording demo '${match[2]}' successfully!`);
+            await DemoRecordingHelper.applyRecordingPreferences();
+            Logger.info(`Applied recording preferences and recorded a message in demo '${match[2]}'.`);
+        } else if (match[3]) {
+            //Please start demo recording after current round is over.
+            SubscriberManager.sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
+            await SubscriberManager.searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp);
+            await DemoRecordingHelper.attemptStartRecording(demoName);
+        }
     }
 }

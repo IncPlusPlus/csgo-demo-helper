@@ -56,8 +56,11 @@ export class SubscriberManager {
     private static specialOutputGrabbers: Pair<RegExp, pDefer.DeferredPromise<string>>[] = [];
 
     public static init = async (): Promise<void> => {
+        Logger.info('Starting up...');
+        Logger.info(`Waiting to connect to CS:GO's netcon on port ${SubscriberManager.port}.`);
         await SubscriberManager.patientlyWaitForConsoleSocket();
         SubscriberManager.socket = net.connect(SubscriberManager.port, '127.0.0.1');
+        Logger.info(`Connected on port ${SubscriberManager.port}.`);
         SubscriberManager.socket.setEncoding('utf8');
         SubscriberManager.reader = readline.createInterface({
             input: SubscriberManager.socket,
@@ -116,7 +119,8 @@ export class SubscriberManager {
                      * the provided message. If it returns false, we should keep iterating over our subscribers to find
                      * which
                      */
-                    if (SubscriberManager.subscribers[i].canHandle(line)) {
+                    const subscriberCanHandleLine = await SubscriberManager.subscribers[i].canHandle(line);
+                    if (subscriberCanHandleLine) {
                         Logger.fine(`Selected listener '${SubscriberManager.subscribers[i]}' to handle line '${line}'.`)
                         //We've found a suitable method to handle the message
                         SubscriberManager.subscribers[i].handleLine(line).then(() => Logger.fine(`Listener '${SubscriberManager.subscribers[i]}' finished handling line '${line}'.`));
@@ -145,7 +149,7 @@ export class SubscriberManager {
             }
         } catch (err) {
             console.log(err);
-            console.log("Encountered an error when waiting for the console socket to open. See above text for details.\n");
+            Logger.warn("Encountered an error when waiting for the console socket to open. See above text for details.\n");
         }
     }
 
