@@ -164,7 +164,7 @@ export class SubscriberManager {
                 SubscriberManager.socket.write(`${command}\n`);
             }
             //TODO: Research how to PROPERLY use varargs in TypeScript :)
-        } else if (typeof commandOrArray === 'string') {
+        } else {
             Logger.writingToCStrikeConsole(commandOrArray);
             SubscriberManager.socket.write(`${commandOrArray}\n`);
         }
