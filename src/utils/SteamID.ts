@@ -1,7 +1,9 @@
 import axios from 'axios';
 import {Config} from "./Config";
+import {LogHelper} from "./LogHelper";
 
 export class SteamID {
+    private static readonly log = LogHelper.getLogger('SteamID');
     private static readonly config: { [p: string]: any } = Config.getConfig();
     private static readonly steamWebAPIKey: string = SteamID.config.steam.steam_web_api_key;
     private static readonly steamID64: string = SteamID.config.steam.steamID64;
@@ -14,13 +16,9 @@ export class SteamID {
             // console.log(response.data.name);
             playerName = response.data.response["players"][0]["personaname"];
         } catch (error) {
-            console.log(error);
+            SteamID.log.error(error);
+            throw error;
         }
         return playerName;
     }
 }
-
-// (async () => {
-//     let name = await getPlayerProfileName();
-//     console.log(name);
-// })();

@@ -6,18 +6,21 @@
 import {createInterface, Interface} from 'readline';
 import {connect, Socket} from 'net';
 import {v4} from 'uuid';
-import {Logger} from "./Logger";
+import {LogHelper} from "./LogHelper";
 import {Config} from "./Config";
+import {TimeoutPromise} from "./TimeoutPromise";
 import pDefer = require('p-defer');
 
 const waitOn = require("wait-on");
 
-
-//TODO: Make the reject method of the promises expire on a timeout to assist with troubleshooting
 export class SubscriberManager {
     private static readonly cvarEchoRegExp: RegExp = RegExp('^\"([a-zA-Z_]+)\" = \"(\\d+)\".*');
     private static readonly config: { [p: string]: any } = Config.getConfig();
     private static readonly port: number = SubscriberManager.config.csgo.netcon_port;
+    private static readonly log = LogHelper.getLogger('SubscriberManager');
+    private static readonly subscriberLog = LogHelper.getLogger('SubscriberManager.subscribers');
+    private static readonly cvarSubscribersLog = LogHelper.getLogger('SubscriberManager.cvarSubscribers');
+    private static readonly valueListenersLog = LogHelper.getLogger('SubscriberManager.valueListeners');
 
 //For use with functions that are expecting the game not to be open yet
     private static readonly waitOnOpts = {
@@ -54,16 +57,21 @@ export class SubscriberManager {
     private static specialOutputGrabbers: Pair<RegExp, pDefer.DeferredPromise<string>>[] = [];
 
     public static init = async (): Promise<void> => {
-        Logger.info('Starting up...');
-        Logger.info(`Waiting to connect to CS:GO's netcon on port ${SubscriberManager.port}.`);
-        await SubscriberManager.patientlyWaitForConsoleSocket();
+        SubscriberManager.log.info('Starting up...');
+        SubscriberManager.log.debug(`Waiting to connect to CS:GO's netcon on port ${SubscriberManager.port}.`);
+        try {
+            await SubscriberManager.patientlyWaitForConsoleSocket();
+        } catch (e) {
+            throw e;
+        }
         SubscriberManager.socket = connect(SubscriberManager.port, '127.0.0.1');
-        Logger.info(`Connected on port ${SubscriberManager.port}.`);
+        SubscriberManager.log.debug(`Connected on port ${SubscriberManager.port}.`);
         SubscriberManager.socket.setEncoding('utf8');
         SubscriberManager.reader = createInterface({
             input: SubscriberManager.socket,
             crlfDelay: Infinity
         });
+        SubscriberManager.log.info('Ready!');
     }
 
     public static begin = async (): Promise<void> => {
@@ -72,7 +80,7 @@ export class SubscriberManager {
             let lineHandledBySpecialOutputGrabber: boolean = false;
             for (let i = 0; i < SubscriberManager.specialOutputGrabbers.length; i++) {
                 if (SubscriberManager.specialOutputGrabbers[i][0].test(line)) {
-                    Logger.fine(`Selected output grabber '${SubscriberManager.specialOutputGrabbers[i]}' to handle line '${line}'.`)
+                    SubscriberManager.valueListenersLog.trace(`Selected output grabber '${SubscriberManager.specialOutputGrabbers[i]}' to handle line '${line}'.`)
                     SubscriberManager.specialOutputGrabbers[i][1].resolve(line);
                     SubscriberManager.specialOutputGrabbers.splice(i, 1);
                     lineHandledBySpecialOutputGrabber = true;
@@ -93,7 +101,7 @@ export class SubscriberManager {
                     cvarName = cvarOutput[1];
                     cvarValue = cvarOutput[2];
                 } else {
-                    Logger.warn(`Cvar RegEX matched output for a cvar but couldn't properly capture the content. Console output was '${line}'.`);
+                    SubscriberManager.cvarSubscribersLog.error(`Cvar RegEX matched output for a cvar but couldn't properly capture the content. Console output was '${line}'.`);
                     continue;
                 }
             }
@@ -111,18 +119,24 @@ export class SubscriberManager {
                 continue;
             for (let i = 0; i <= SubscriberManager.subscribers.length; i++) {
                 if (i === SubscriberManager.subscribers.length) {
-                    Logger.finest(`No suitable subscriber found for message: ${line}`);
+                    SubscriberManager.log.trace(`No suitable subscriber found for message: ${line}`);
                 } else {
                     /*
                      * If the subscribed callback returns true, it means that it is responsible for handling
                      * the provided message. If it returns false, we should keep iterating over our subscribers to find
                      * which
                      */
-                    const subscriberCanHandleLine = await SubscriberManager.subscribers[i].canHandle(line);
+                    const subscriberCanHandleLine = SubscriberManager.subscribers[i].canHandle(line);
                     if (subscriberCanHandleLine) {
-                        Logger.fine(`Selected listener '${SubscriberManager.subscribers[i]}' to handle line '${line}'.`)
+                        SubscriberManager.subscriberLog.debug(`Selected listener '${SubscriberManager.subscribers[i]}' to handle line '${line}'.`);
                         //We've found a suitable method to handle the message
-                        SubscriberManager.subscribers[i].handleLine(line).then(() => Logger.fine(`Listener '${SubscriberManager.subscribers[i]}' finished handling line '${line}'.`));
+                        try {
+                            await SubscriberManager.subscribers[i].handleLine(line);
+                            SubscriberManager.subscriberLog.debug(`Listener '${SubscriberManager.subscribers[i]}' finished handling line '${line}'.`);
+                        } catch (e) {
+                            SubscriberManager.subscriberLog.error(`Listener '${SubscriberManager.subscribers[i]}' encountered an error handling line '${line}'.`);
+                            SubscriberManager.subscriberLog.error(e);
+                        }
                         break;
                     }
                 }
@@ -131,24 +145,29 @@ export class SubscriberManager {
     }
 
     public static patientlyWaitForConsoleSocket = async () => {
-        await SubscriberManager.waitForConsoleSocket(true);
+        try {
+            await SubscriberManager.waitForConsoleSocket(true);
+        } catch (e) {
+            throw e;
+        }
     }
 
     public static waitForConsoleSocket = async (patient: boolean) => {
         const requestId = v4();
         try {
             if (patient) {
-                Logger.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOpts.timeout / 1000} seconds.`)
+                SubscriberManager.log.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOpts.timeout / 1000} seconds.`)
                 await waitOn(SubscriberManager.waitOnOpts);
-                Logger.debug(`(Request ID ${requestId}) Done waiting!`)
+                SubscriberManager.log.debug(`(Request ID ${requestId}) Done waiting!`)
             } else {
-                Logger.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOptsImpatient.timeout / 1000} seconds.`)
+                SubscriberManager.log.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOptsImpatient.timeout / 1000} seconds.`)
                 await waitOn(SubscriberManager.waitOnOptsImpatient);
-                Logger.debug(`(Request ID ${requestId}) Done waiting!`)
+                SubscriberManager.log.debug(`(Request ID ${requestId}) Done waiting!`)
             }
         } catch (err) {
-            console.log(err);
-            Logger.warn("Encountered an error when waiting for the console socket to open. See above text for details.\n");
+            SubscriberManager.log.error(err);
+            SubscriberManager.log.error('Encountered an error when waiting for the console socket to open.');
+            throw err;
         }
     }
 
@@ -159,12 +178,12 @@ export class SubscriberManager {
     public static sendMessage = (commandOrArray: string | string[]) => {
         if (Array.isArray(commandOrArray)) {
             for (let command of commandOrArray) {
-                Logger.writingToCStrikeConsole(command);
+                SubscriberManager.log.debug(`Writing to CStrike console: '${command}'`);
                 SubscriberManager.socket.write(`${command}\n`);
             }
-            //TODO: Research how to PROPERLY use varargs in TypeScript :)
+            //TODO: Research if there's a better way to use varargs in TypeScript :)
         } else {
-            Logger.writingToCStrikeConsole(commandOrArray);
+            SubscriberManager.log.debug(`Writing to CStrike console: '${commandOrArray}'`);
             SubscriberManager.socket.write(`${commandOrArray}\n`);
         }
     }
@@ -173,21 +192,21 @@ export class SubscriberManager {
         const deferred: pDefer.DeferredPromise<number> = pDefer();
         SubscriberManager.subscribedCvarValues.push([cvarName, deferred]);
         SubscriberManager.sendMessage(cvarName);
-        Logger.debug(`Added '${cvarName}' to the cvar subscribers list.`)
-        return deferred.promise;
+        SubscriberManager.cvarSubscribersLog.debug(`Added '${cvarName}' to the cvar subscribers list.`)
+        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`);
     }
 
     public static searchForValue = (command: string | string[], regex: RegExp) => {
         const deferred: pDefer.DeferredPromise<string> = pDefer();
         SubscriberManager.specialOutputGrabbers.push([regex, deferred]);
         SubscriberManager.sendMessage(command);
-        Logger.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`)
-        return deferred.promise;
+        SubscriberManager.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`)
+        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for response to command '${command}'`);
     }
 
     public static subscribe = (listener: ListenerService) => {
         SubscriberManager.subscribers.push(listener);
-        Logger.debug(`Added callback '${listener}' to the subscribers list.`)
+        SubscriberManager.subscriberLog.debug(`Added callback '${listener}' to the subscribers list.`)
     }
 
     public static unsubscribe = (listener: ListenerService) => {
@@ -195,22 +214,24 @@ export class SubscriberManager {
         if (index > -1) {
             SubscriberManager.subscribers.splice(index, 1);
         } else {
-            Logger.warn(`Attempted to unsubscribe callback function '${listener}' but failed.`);
+            SubscriberManager.subscriberLog.warn(`Attempted to unsubscribe callback function '${listener}' but failed.`);
         }
     }
 
-    /**
-     * This helps make sure that potential multi-line console output goes to only one specific callback
-     * as it is the only callback that will understand how to operate on the received text.
-     *
-     * Remove this exclusivity afterwards by running unsubscribeExclusively
-     * @param callback a callback to run on every line of received text after this function is run.
-     */
-    public static subscribeExclusively = (callback: any) => {
+    //Maybe I'll implement these in the future if necessary
 
-    }
-
-    public static unsubscribeExclusively = (callback: any) => {
-
-    }
+    // /**
+    //  * This helps make sure that potential multi-line console output goes to only one specific callback
+    //  * as it is the only callback that will understand how to operate on the received text.
+    //  *
+    //  * Remove this exclusivity afterwards by running unsubscribeExclusively
+    //  * @param callback a callback to run on every line of received text after this function is run.
+    //  */
+    // public static subscribeExclusively = (callback: any) => {
+    //
+    // }
+    //
+    // public static unsubscribeExclusively = (callback: any) => {
+    //
+    // }
 }

@@ -1,13 +1,15 @@
 import pDefer = require("p-defer");
-import {Logger} from "./Logger";
+import {LogHelper} from "./LogHelper";
 import {SubscriberManager} from "./SubscriberManager";
 
 export class VoicePlayerVolume {
+    private static readonly log = LogHelper.getLogger('VoicePlayerVolume');
+
     public static setVoicePlayerVolumeByName = async (playerName: string, volume: number) => {
         let players = await VoicePlayerVolume.getVoicePlayerVolumeValues();
         const player = players.find((value: { PlayerName: string; }) => value.PlayerName === playerName);
         if (!player) {
-            Logger.warn(`Couldn't find player with name '${playerName}' when attempting to set voice volume.`);
+            VoicePlayerVolume.log.warn(`Couldn't find player with name '${playerName}' when attempting to set voice volume.`);
         } else {
             VoicePlayerVolume.setVoicePlayerVolume(player.PlayerNumber, volume);
         }
@@ -34,6 +36,7 @@ class VoicePlayerVolumeListener implements ListenerService {
     private players: { Volume: number; PlayerName: string; PlayerNumber: number }[] = [];
     private reading = false;
     private promise: pDefer.DeferredPromise<{ Volume: number; PlayerName: string; PlayerNumber: number }[]>;
+    private static log = LogHelper.getLogger('VoicePlayerVolumeListener');
 
     constructor(promise: pDefer.DeferredPromise<{ Volume: number; PlayerName: string; PlayerNumber: number }[]>) {
         this.promise = promise;
@@ -62,7 +65,8 @@ class VoicePlayerVolumeListener implements ListenerService {
                     this.players.push(playerVolume);
                 }
             } else {
-                Logger.warn('Failed to split output for player volume info using RegExp.exec()');
+                //Maybe throw error here
+                VoicePlayerVolumeListener.log.error('Failed to split output for player volume info using RegExp.exec()');
             }
         } else if (this.reading && VoicePlayerVolumeListener.paddingDashesRegExp.test(consoleLine)) {
             this.reading = false;

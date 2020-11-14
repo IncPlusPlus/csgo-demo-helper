@@ -4,11 +4,12 @@
 
 import {Config} from "../utils/Config";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
-import {Logger} from "../utils/Logger";
+import {LogHelper} from "../utils/LogHelper";
 import {SubscriberManager} from "../utils/SubscriberManager";
 import {DemoRecordingHelper} from "./DemoRecordingHelper";
 
 export class DemoPlaybackHelper implements ListenerService {
+    private static readonly log = LogHelper.getLogger('DemoPlaybackHelper');
     // private static readonly demoPlaybackRegExp = RegExp('^Playing demo from (.*)\\.dem\\.$');
     //A message like this will be echoed right when the demo starts recording.
     private static readonly playerMutedByDemoHelperRegExp = RegExp('^DemoHelper set the volume of player (.*) to 0\\.$');
@@ -32,10 +33,10 @@ export class DemoPlaybackHelper implements ListenerService {
                         throw Error('Got null match when determining player name from the message left behind in the demo.');
                     const playerName = match[1];
                     //TODO: Additional testing required to make sure this doesn't fire before the game is ready to deal with it
-                    Logger.info(`DemoPlaybackHelper found a line indicating DemoHelper muted ${playerName} so it unmuted them.`);
+                    DemoPlaybackHelper.log.info(`DemoPlaybackHelper found a line indicating DemoHelper muted ${playerName} so it unmuted them.`);
                     await VoicePlayerVolume.setVoicePlayerVolumeByName(playerName, 1);
                 } else {
-                    Logger.info("DemoPlaybackHelper found a line indicating DemoHelper muted a player but demo_playback_helper.playback_voice_player_volume was set to 0 in the config file.");
+                    DemoPlaybackHelper.log.info("DemoPlaybackHelper found a line indicating DemoHelper muted a player but demo_playback_helper.playback_voice_player_volume was set to 0 in the config file.");
                 }
             }
         }

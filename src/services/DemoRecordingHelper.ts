@@ -22,11 +22,12 @@ import {DemoNamingHelper} from "../utils/DemoNamingHelper";
 import {SubscriberManager} from "../utils/SubscriberManager";
 import {ConsoleHelper} from "../utils/ConsoleHelper";
 import {SteamID} from "../utils/SteamID";
-import {Logger} from "../utils/Logger";
+import {LogHelper} from "../utils/LogHelper";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {Cvars} from "../utils/Cvars";
 
 export class DemoRecordingHelper implements ListenerService {
+    private static readonly log = LogHelper.getLogger('DemoRecordingHelper');
     private static readonly demoRecordingEndRegExp = RegExp('^Completed demo, recording time \\d+\\.\\d+, game frames \\d+\\.$');
     //TODO: Allow user to input command like "dh rec new" to skip the prompt since they'd know if this is a new game or whether they rejoined an existing one
     private static readonly beginRecordingCommand = 'dh rec';
@@ -46,10 +47,15 @@ export class DemoRecordingHelper implements ListenerService {
 
     async handleLine(consoleLine: string): Promise<void> {
         if (consoleLine === DemoRecordingHelper.beginRecordingCommand) {
-            await DemoRecordingHelper.handleStartRecord();
+            try {
+                await DemoRecordingHelper.handleStartRecord();
+            } catch (e) {
+                //It's okay to throw errors in this method because it's an expectation that SubscriberManager knows what to do.
+                throw e;
+            }
         } else if (DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine)) {
             DemoRecordingHelper.currentlyRecording = false;
-            Logger.info(consoleLine);
+            DemoRecordingHelper.log.info(consoleLine);
         }
         //when attempting to start the recording process check if we get told to wait for the next round to start to be able to record a demo. Log the fact that recording has to be delayed (both to this console and to the game) but will start when the next round begins. Add a service to wait for the console output indicating a round ended
     }
@@ -105,8 +111,13 @@ export class DemoRecordingHelper implements ListenerService {
     //TODO: Maybe make this stop a potential current demo recording session
     private static async handleStartRecord() {
         let demoName = '';
-        const gameMode = await DemoNamingHelper.getGameModeString();
-        const mapName = await DemoNamingHelper.getMapName(Config.getConfig().demo_naming_helper.attempt_hide_map_prefix);
+        let gameMode, mapName;
+        try {
+            gameMode = await DemoNamingHelper.getGameModeString();
+            mapName = await DemoNamingHelper.getMapName(Config.getConfig().demo_naming_helper.attempt_hide_map_prefix);
+        } catch (e) {
+            throw e;
+        }
         const timeStamp = DemoNamingHelper.makeTimestamp();
         ConsoleHelper.padConsole(5);
         if (gameMode === 'competitive') {
@@ -120,22 +131,35 @@ export class DemoRecordingHelper implements ListenerService {
         //If this demo name already exists, prompt as to whether this is a new game or whether this is a continued recording of a yet-unfinished game
         if (existsSync(`${Config.getConfig().csgo.csgo_demos_folder}/${demoName}.dem`)) {
             const existingDemoInfo = DemoRecordingHelper.findLatestDemoWithName(demoName);
-            demoName = await DemoRecordingHelper.promptUserForNewOrSplitDemo(demoName, DemoRecordingHelper.mostRecentDemoInfoToString(demoName, existingDemoInfo), existingDemoInfo);
+            try {
+                demoName = await DemoRecordingHelper.promptUserForNewOrSplitDemo(demoName, DemoRecordingHelper.mostRecentDemoInfoToString(demoName, existingDemoInfo), existingDemoInfo);
+            } catch (e) {
+                DemoRecordingHelper.log.warn('Encountered an error when prompting the user whether to split or make a new demo.');
+                throw e;
+            }
             if (!demoName)
                 //User cancelled the request to record a demo
-                return;
+                SubscriberManager.sendMessage('echo Cancelling');
+            DemoRecordingHelper.log.debug('User cancelled when prompted whether to split or make a new demo.');
+            return;
         }
         await DemoRecordingHelper.attemptStartRecording(demoName);
     }
 
     private static async applyRecordingPreferences() {
-        Logger.info("Applying recording preferences...");
+        DemoRecordingHelper.log.info("Applying recording preferences...");
         if (Config.getConfig().demo_recording_helper.record_my_voice_in_demos === "1") {
             Cvars.setCvar('voice_loopback', "1");
         } else {
             Cvars.setCvar('voice_loopback', "0");
         }
-        const myName = await SteamID.getPlayerProfileName();
+        let myName;
+        try {
+            myName = await SteamID.getPlayerProfileName();
+        } catch (e) {
+            DemoRecordingHelper.log.error(e);
+            throw e;
+        }
         if (Config.getConfig().demo_recording_helper.mute_my_voice_while_recording === "1") {
             await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 0);
             SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 0.`);
@@ -143,7 +167,7 @@ export class DemoRecordingHelper implements ListenerService {
             await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 1);
             SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 1.`);
         }
-        Logger.info("Finished applying recording preferences.");
+        DemoRecordingHelper.log.info("Finished applying recording preferences.");
     }
 
     private static async attemptStartRecording(demoName: string) {
@@ -157,11 +181,11 @@ export class DemoRecordingHelper implements ListenerService {
         } else if (match[2]) {
             //Recording properly started. All clear
             SubscriberManager.sendMessage(`echo DemoHelper started recording demo successfully!`);
-            Logger.info(match[2]);
-            Logger.info(`DemoHelper started recording demo '${match[3]}' successfully!`);
+            DemoRecordingHelper.log.info(match[2]);
+            DemoRecordingHelper.log.info(`DemoHelper started recording demo '${match[3]}' successfully!`);
             DemoRecordingHelper.currentlyRecording = true;
             await DemoRecordingHelper.applyRecordingPreferences();
-            Logger.info(`Applied recording preferences and recorded a message in demo '${match[3]}'.`);
+            DemoRecordingHelper.log.info(`Applied recording preferences and recorded a message in demo '${match[3]}'.`);
         } else if (match[4]) {
             //Please start demo recording after current round is over.
             SubscriberManager.sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);

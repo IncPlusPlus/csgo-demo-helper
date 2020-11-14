@@ -10,21 +10,18 @@
  */
 
 import {SubscriberManager} from './SubscriberManager';
-import {Logger} from "./Logger";
+import {LogHelper} from "./LogHelper";
 
 export class Cvars {
+    private static readonly log = LogHelper.getLogger('Cvars');
+
     public static getCvar = async (cvarName: string): Promise<number> => {
-        Logger.debug(`Retrieving value of cvar '${cvarName}'...`);
+        Cvars.log.debug(`Retrieving value of cvar '${cvarName}'...`);
         return await SubscriberManager.requestCvarValue(cvarName);
     }
 
     public static setCvar = (cvarName: string, value: string) => {
         SubscriberManager.sendMessage(`${cvarName} ${value}`);
-        Logger.debug(`Set value of cvar '${cvarName}' to '${value}'.`);
+        Cvars.log.debug(`Set value of cvar '${cvarName}' to '${value}'.`);
     }
 }
-
-// (async () => {
-//     let output = await getVoicePlayerVolumeValues();
-//     console.log(output);
-// })();

@@ -5,10 +5,9 @@
  * and stop recording the demo, I typically append "-pt2" to indicate this is the second part of the same demo.
  * This tool helps by automating the naming process including checking for existing demos.
  */
-import {Config} from "./Config";
 import {Cvars} from "./Cvars";
 import {SubscriberManager} from "./SubscriberManager";
-import {Logger} from "./Logger";
+import {LogHelper} from "./LogHelper";
 
 export class DemoNamingHelper {
     private static readonly gameModeStrings: string[][] = [
@@ -16,7 +15,7 @@ export class DemoNamingHelper {
         ["competitive", "demolition"],
         ["wingman", "deathmatch"]
     ];
-    private static readonly config = Config.getConfig();
+    private static readonly log = LogHelper.getLogger('DemoNamingHelper');
     private static readonly mapFromStatusRegExp: RegExp = RegExp('map\\s+: ([a-zA-Z_]+).*');
 
     /**
@@ -48,7 +47,7 @@ export class DemoNamingHelper {
                 return mapName[1];
             }
         } else {
-            Logger.warn('Failed to match regex when looking for map name.');
+            DemoNamingHelper.log.error('Failed to match regex when looking for map name.');
             return 'UNKNOWN';
         }
     }
