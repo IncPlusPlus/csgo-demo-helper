@@ -1,15 +1,17 @@
 /*
- * When I record POV demos, I like to keep them organized by naming them by gamemode, map, and date. If I've already
- * played the same map and gamemode as a previous demo, I append "-2" or a greater number to the end of the demo name
- * to indicate it was the second time playing that combination of gamemode and map that day. If I have to disconnect
+ * When I record POV demos, I like to keep them organized by naming them by game mode, map, and date. If I've already
+ * played the same map and game mode as a previous demo, I append "-2" or a greater number to the end of the demo name
+ * to indicate it was the second time playing that combination of game mode and map that day. If I have to disconnect
  * and stop recording the demo, I typically append "-pt2" to indicate this is the second part of the same demo.
  * This tool helps by automating the naming process including checking for existing demos.
  */
+
 import {Cvars} from "./Cvars";
 import {SubscriberManager} from "./SubscriberManager";
 import {LogHelper} from "./LogHelper";
 
 export class DemoNamingHelper {
+    // noinspection SpellCheckingInspection
     private static readonly gameModeStrings: string[][] = [
         ["casual", "armsrace", "training", "custom", "cooperative", "skirmish"],
         ["competitive", "demolition"],

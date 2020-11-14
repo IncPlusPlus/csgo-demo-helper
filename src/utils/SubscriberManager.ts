@@ -3,6 +3,7 @@
  * of the socket simply wasn't viable. I needed a stupid-simple way for a single authority to hold the socket connection
  * and manage it responsibly, passing text output to whoever needed it.
  */
+
 import {createInterface, Interface} from 'readline';
 import {connect, Socket} from 'net';
 import {v4} from 'uuid';

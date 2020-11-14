@@ -3,10 +3,8 @@
  */
 
 import {SubscriberManager} from "./SubscriberManager";
-import {Config} from "./Config";
 
 export class ConsoleHelper {
-    private static readonly config: { [p: string]: any } = Config.getConfig();
     private static readonly welcomeMessage: string[] = [
         "Welcome to IncPlusPlus's CS:GO QOS utils!",
         "Type 'echo ds help' for available commands.",
@@ -39,6 +37,6 @@ export class ConsoleHelper {
     }
 
     public static printHelpMessage = (): void => {
-        //TODO
+        //TODO: Make an actual help section
     }
 }

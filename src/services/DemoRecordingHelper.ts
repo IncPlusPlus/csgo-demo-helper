@@ -108,7 +108,7 @@ export class DemoRecordingHelper implements ListenerService {
         throw Error(`Finished execution of ${DemoRecordingHelper.promptUserForNewOrSplitDemo} without properly returning.`);
     }
 
-    //TODO: Maybe make this stop a potential current demo recording session
+    //TODO: Maybe make this stop a potential current demo recording session to avoid one more error checking case
     private static async handleStartRecord() {
         let demoName = '';
         let gameMode, mapName;
@@ -188,6 +188,7 @@ export class DemoRecordingHelper implements ListenerService {
             DemoRecordingHelper.log.info(`Applied recording preferences and recorded a message in demo '${match[3]}'.`);
         } else if (match[4]) {
             //Please start demo recording after current round is over.
+            // noinspection SpellCheckingInspection
             SubscriberManager.sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
             await SubscriberManager.searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp);
             await DemoRecordingHelper.attemptStartRecording(demoName);
