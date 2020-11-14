@@ -3,14 +3,12 @@
  * of the socket simply wasn't viable. I needed a stupid-simple way for a single authority to hold the socket connection
  * and manage it responsibly, passing text output to whoever needed it.
  */
-import * as readline from 'readline';
-import * as net from 'net';
-import * as uuid from 'uuid';
-import * as util from 'util';
-import pDefer = require('p-defer');
+import {createInterface, Interface} from 'readline';
+import {connect, Socket} from 'net';
+import {v4} from 'uuid';
 import {Logger} from "./Logger";
-import {Interface} from "readline";
 import {Config} from "./Config";
+import pDefer = require('p-defer');
 
 const waitOn = require("wait-on");
 
@@ -42,7 +40,7 @@ export class SubscriberManager {
         window: 500, // stabilization time in ms, default 750ms
     };
 
-    private static socket: net.Socket;
+    private static socket: Socket;
     private static reader: Interface;
     /** These subscribers are expecting one or more lines of text, unprompted. They're here to stay for the most part. */
     private static subscribers: ListenerService[] = [];
@@ -59,16 +57,16 @@ export class SubscriberManager {
         Logger.info('Starting up...');
         Logger.info(`Waiting to connect to CS:GO's netcon on port ${SubscriberManager.port}.`);
         await SubscriberManager.patientlyWaitForConsoleSocket();
-        SubscriberManager.socket = net.connect(SubscriberManager.port, '127.0.0.1');
+        SubscriberManager.socket = connect(SubscriberManager.port, '127.0.0.1');
         Logger.info(`Connected on port ${SubscriberManager.port}.`);
         SubscriberManager.socket.setEncoding('utf8');
-        SubscriberManager.reader = readline.createInterface({
+        SubscriberManager.reader = createInterface({
             input: SubscriberManager.socket,
             crlfDelay: Infinity
         });
     }
 
-    public static begin = async () :Promise<void> => {
+    public static begin = async (): Promise<void> => {
         for await (const rawLine of SubscriberManager.reader) {
             const line = rawLine.trimEnd();
             let lineHandledBySpecialOutputGrabber: boolean = false;
@@ -98,8 +96,8 @@ export class SubscriberManager {
                     continue;
                 }
             }
-            for(let i = 0; i < SubscriberManager.subscribedCvarValues.length; i++) {
-                if(SubscriberManager.subscribedCvarValues[i][0] === cvarName) {
+            for (let i = 0; i < SubscriberManager.subscribedCvarValues.length; i++) {
+                if (SubscriberManager.subscribedCvarValues[i][0] === cvarName) {
                     //Run the callback, providing it with the value of the Cvar it was asking about
                     SubscriberManager.subscribedCvarValues[i][1].resolve(Number(cvarValue));
                     //Remove this subscriber
@@ -108,12 +106,12 @@ export class SubscriberManager {
                     break;
                 }
             }
-            if(lineHandledByCvarListener)
+            if (lineHandledByCvarListener)
                 continue;
-            for(let i = 0; i <= SubscriberManager.subscribers.length; i++) {
-                if(i === SubscriberManager.subscribers.length) {
+            for (let i = 0; i <= SubscriberManager.subscribers.length; i++) {
+                if (i === SubscriberManager.subscribers.length) {
                     Logger.finest(`No suitable subscriber found for message: ${line}`);
-                }else {
+                } else {
                     /*
                      * If the subscribed callback returns true, it means that it is responsible for handling
                      * the provided message. If it returns false, we should keep iterating over our subscribers to find
@@ -135,15 +133,15 @@ export class SubscriberManager {
         await SubscriberManager.waitForConsoleSocket(true);
     }
 
-    public static  waitForConsoleSocket = async (patient : boolean) => {
-        const requestId = uuid.v4();
+    public static waitForConsoleSocket = async (patient: boolean) => {
+        const requestId = v4();
         try {
-            if(patient) {
-                Logger.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOpts.timeout/1000} seconds.`)
+            if (patient) {
+                Logger.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOpts.timeout / 1000} seconds.`)
                 await waitOn(SubscriberManager.waitOnOpts);
                 Logger.debug(`(Request ID ${requestId}) Done waiting!`)
             } else {
-                Logger.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOptsImpatient.timeout/1000} seconds.`)
+                Logger.debug(`(Request ID ${requestId}) Waiting on TCP port ${SubscriberManager.port} for ${SubscriberManager.waitOnOptsImpatient.timeout / 1000} seconds.`)
                 await waitOn(SubscriberManager.waitOnOptsImpatient);
                 Logger.debug(`(Request ID ${requestId}) Done waiting!`)
             }
