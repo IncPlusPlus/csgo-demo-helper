@@ -17,7 +17,7 @@ export class DemoNamingHelper {
         ["wingman", "deathmatch"]
     ];
     private static readonly config = Config.getConfig();
-    private static readonly mapFromStatusRegExp: RegExp = RegExp('^map\ +: ([a-zA-Z_]+) at:.*');
+    private static readonly mapFromStatusRegExp: RegExp = RegExp('map\\s+: ([a-zA-Z_]+).*');
 
     /**
      * See https://totalcsgo.com/command/gametype
