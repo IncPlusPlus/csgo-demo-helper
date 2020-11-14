@@ -80,6 +80,7 @@ export class SubscriberManager {
                 }
             }
             if (lineHandledBySpecialOutputGrabber) {
+                //This line has been processed and passing to other handlers could cause undefined behavior
                 //Don't bother handing the line value to anyone else. Await the next line of console output
                 continue;
             }
