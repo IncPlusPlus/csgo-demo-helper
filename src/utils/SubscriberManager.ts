@@ -93,7 +93,7 @@ export class SubscriberManager {
                     cvarName = cvarOutput[1];
                     cvarValue = cvarOutput[2];
                 } else {
-                    //TODO: WARN HERE
+                    Logger.warn(`Cvar RegEX matched output for a cvar but couldn't properly capture the content. Console output was '${line}'.`);
                     continue;
                 }
             }
