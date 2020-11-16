@@ -4,10 +4,18 @@
 
 import {SubscriberManager} from "./SubscriberManager";
 
+//TODO: Remove padding from messages and just use the method available in ConsoleHelper
 export class ConsoleHelper {
     private static readonly welcomeMessage: string[] = [
         "Welcome to IncPlusPlus's CS:GO QOS utils!",
         "Type 'echo ds help' for available commands.",
+        "",
+        "",
+        "",
+    ];
+    private static readonly helpMessage: string[] = [
+        "Type 'dh rec' to record a new POV demo.",
+        "That's really all that there is for now...",
         "",
         "",
         "",
@@ -37,6 +45,7 @@ export class ConsoleHelper {
     }
 
     public static printHelpMessage = (): void => {
-        //TODO: Make an actual help section
+        const message = ConsoleHelper.helpMessage.map(value => "echo \"" + value + "\"");
+        SubscriberManager.sendMessage(message);
     }
 }
