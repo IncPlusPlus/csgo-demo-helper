@@ -20,7 +20,7 @@ const log = LogHelper.getLogger('Main');
     SubscriberManager.subscribe(new DemoPlaybackHelper());
     await SubscriberManager.init()
     SubscriberManager.begin().then();
-})().then(() => log.info('Quitting...')).catch(reason => {
+})().catch(reason => {
     log.fatal(reason);
     log.fatal('Exited due to a fatal error. Please see above for details.');
 });
