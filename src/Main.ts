@@ -5,6 +5,7 @@ import {ShowWelcomeMessageOnStartup} from "./services/ShowWelcomeMessageOnStartu
 import {DemoRecordingHelper} from "./services/DemoRecordingHelper";
 import {DemoPlaybackHelper} from "./services/DemoPlaybackHelper";
 import {LogHelper} from "./utils/LogHelper";
+import {ShowHelpMessageWhenAsked} from "./services/ShowHelpMessageWhenAsked";
 
 const log = LogHelper.getLogger('Main');
 
@@ -16,6 +17,7 @@ const log = LogHelper.getLogger('Main');
         throw Error('csgo_demos_folder in config.ini is misconfigured.');
     }
     SubscriberManager.subscribe(new ShowWelcomeMessageOnStartup());
+    SubscriberManager.subscribe(new ShowHelpMessageWhenAsked());
     SubscriberManager.subscribe(new DemoRecordingHelper());
     SubscriberManager.subscribe(new DemoPlaybackHelper());
     await SubscriberManager.init()
