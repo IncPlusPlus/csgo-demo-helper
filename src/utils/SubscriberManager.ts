@@ -132,8 +132,8 @@ export class SubscriberManager {
                         SubscriberManager.subscriberLog.debug(`Selected listener '${SubscriberManager.subscribers[i]}' to handle line '${line}'.`);
                         //We've found a suitable method to handle the message
                         try {
-                            await SubscriberManager.subscribers[i].handleLine(line);
-                            SubscriberManager.subscriberLog.debug(`Listener '${SubscriberManager.subscribers[i]}' finished handling line '${line}'.`);
+                            //Can't run 'await SubscriberManager.subscribers[i].handleLine(line);' because this would cause a deadlock
+                            SubscriberManager.subscribers[i].handleLine(line).then(() => SubscriberManager.subscriberLog.debug(`Listener '${SubscriberManager.subscribers[i]}' finished handling line '${line}'.`));
                         } catch (e) {
                             SubscriberManager.subscriberLog.error(`Listener '${SubscriberManager.subscribers[i]}' encountered an error handling line '${line}'.`);
                             SubscriberManager.subscriberLog.error(e);
