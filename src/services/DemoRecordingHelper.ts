@@ -180,12 +180,15 @@ export class DemoRecordingHelper implements ListenerService {
             SubscriberManager.sendMessage('echo Already recording a demo!!');
         } else if (match[2]) {
             //Recording properly started. All clear
+            ConsoleHelper.padConsole(5);
             SubscriberManager.sendMessage(`echo DemoHelper started recording demo successfully!`);
             DemoRecordingHelper.log.info(match[2]);
             DemoRecordingHelper.log.info(`DemoHelper started recording demo '${match[3]}' successfully!`);
             DemoRecordingHelper.currentlyRecording = true;
             await DemoRecordingHelper.applyRecordingPreferences();
             DemoRecordingHelper.log.info(`Applied recording preferences and recorded a message in demo '${match[3]}'.`);
+            ConsoleHelper.padConsole(5);
+            SubscriberManager.sendMessage(`echo DemoHelper applied recording preferences and recorded a message in demo successfully!`);
         } else if (match[4]) {
             //Please start demo recording after current round is over.
             // noinspection SpellCheckingInspection
