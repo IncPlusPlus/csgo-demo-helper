@@ -27,6 +27,8 @@ Installation is a piece of cake, but you will need to have a teensy bit of rudim
 1. Clone this repository using `git clone https://github.com/IncPlusPlus/csgo-demo-helper.git`.
 1. Create your own config file by making a copy of [config.template.ini](./config.template.ini) and renaming it to "config.ini". Configure the values to your liking but be sure to read what they do!
 1. Set the `netconport` launch option to whatever you have set in your `config.ini` for the `netcon_port` option. Your launch options should be set to "-netconport 2121" (without the quotes) if you intend to use port 2121 for this tool to communicate with the game.
+1. Set `steam_web_api_key` in your `config.ini by [creating and getting a Steam Web API Key](https://steamcommunity.com/dev/apikey)
+1. Set `steamID64` in your `config.ini` by looking up your steam ID with [SteamID.io](https://steamid.io/) and copying the value called "steamID64". There should be a little red icon to the right which lets you copy it.
 1. With your terminal set to the directory you cloned the project into (probably "csgo-demo-helper"), run the command `npm i`. This grabs everything this tool needs to run and dumps it into the node_modules folder.
 1. Profit!
 
