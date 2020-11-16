@@ -27,8 +27,13 @@ export class DemoNamingHelper {
      * and will always refer to Scrim Competitive 5v5 and 2v2 as "wingman".
      */
     public static getGameModeString = async (): Promise<string> => {
-        const gameMode: number = Number(await Cvars.getCvar('game_mode'));
-        const gameType: number = Number(await Cvars.getCvar('game_type'));
+        let gameMode, gameType;
+        try {
+            gameMode = Number(await Cvars.getCvar('game_mode'));
+            gameType = Number(await Cvars.getCvar('game_type'));
+        } catch (e) {
+            throw e;
+        }
 
         return DemoNamingHelper.gameModeStrings[gameMode][gameType];
     }
