@@ -137,11 +137,12 @@ export class DemoRecordingHelper implements ListenerService {
                 DemoRecordingHelper.log.warn('Encountered an error when prompting the user whether to split or make a new demo.');
                 throw e;
             }
-            if (!demoName)
+            if (!demoName) {
                 //User cancelled the request to record a demo
                 SubscriberManager.sendMessage('echo Cancelling');
-            DemoRecordingHelper.log.debug('User cancelled when prompted whether to split or make a new demo.');
-            return;
+                DemoRecordingHelper.log.debug('User cancelled when prompted whether to split or make a new demo.');
+                return;
+            }
         }
         await DemoRecordingHelper.attemptStartRecording(demoName);
     }
