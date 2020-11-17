@@ -194,15 +194,15 @@ export class SubscriberManager {
         SubscriberManager.subscribedCvarValues.push([cvarName, deferred]);
         SubscriberManager.sendMessage(cvarName);
         SubscriberManager.cvarSubscribersLog.debug(`Added '${cvarName}' to the cvar subscribers list.`)
-        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`);
+        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
     }
 
-    public static searchForValue = (command: string | string[], regex: RegExp) => {
+    public static searchForValue = (command: string | string[], regex: RegExp, isUserDecision: boolean) => {
         const deferred: pDefer.DeferredPromise<string> = pDefer();
         SubscriberManager.specialOutputGrabbers.push([regex, deferred]);
         SubscriberManager.sendMessage(command);
         SubscriberManager.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`)
-        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for response to command '${command}'`);
+        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision);
     }
 
     public static subscribe = (listener: ListenerService) => {

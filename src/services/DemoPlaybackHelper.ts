@@ -48,7 +48,7 @@ export class DemoPlaybackHelper implements ListenerService {
     }
 
     private static getCurrentDemoName = async (): Promise<string> => {
-        const consoleLine = await SubscriberManager.searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp);
+        const consoleLine = await SubscriberManager.searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp, false);
         const match = DemoPlaybackHelper.demoInfoRegExp.exec(consoleLine);
         if (!match)
             throw Error(`Failed to execute RegExp on the console's response to demo_info.`);

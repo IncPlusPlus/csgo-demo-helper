@@ -44,7 +44,7 @@ export class DemoNamingHelper {
     }
 
     public static getMapName = async (excludePrefix: boolean): Promise<string> => {
-        const mapLine = await SubscriberManager.searchForValue('status', DemoNamingHelper.mapFromStatusRegExp);
+        const mapLine = await SubscriberManager.searchForValue('status', DemoNamingHelper.mapFromStatusRegExp, false);
         const mapName = DemoNamingHelper.mapFromStatusRegExp.exec(mapLine);
         if (mapName) {
             if (excludePrefix) {
