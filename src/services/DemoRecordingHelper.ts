@@ -25,6 +25,7 @@ import {SteamID} from "../utils/SteamID";
 import {LogHelper} from "../utils/LogHelper";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {Cvars} from "../utils/Cvars";
+import {UserDecisionTimeoutException} from "../utils/TimeoutPromise";
 
 export class DemoRecordingHelper implements ListenerService {
     private static readonly log = LogHelper.getLogger('DemoRecordingHelper');
@@ -134,8 +135,18 @@ export class DemoRecordingHelper implements ListenerService {
             try {
                 demoName = await DemoRecordingHelper.promptUserForNewOrSplitDemo(demoName, DemoRecordingHelper.mostRecentDemoInfoToString(demoName, existingDemoInfo), existingDemoInfo);
             } catch (e) {
-                DemoRecordingHelper.log.warn('Encountered an error when prompting the user whether to split or make a new demo.');
-                throw e;
+                const t = e as UserDecisionTimeoutException;
+                if (t && t.taskName) {
+                    ConsoleHelper.padConsole(5);
+                    SubscriberManager.sendMessage(`echo \"Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...\"`)
+                    ConsoleHelper.padConsole(5);
+                    DemoRecordingHelper.log.warn(`Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...`)
+                    demoName = '';
+                } else {
+                    DemoRecordingHelper.log.warn('Encountered an error when prompting the user whether to split or make a new demo.');
+                    throw e;
+                }
+
             }
             if (!demoName) {
                 //User cancelled the request to record a demo

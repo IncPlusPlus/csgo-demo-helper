@@ -17,7 +17,11 @@ export class TimeoutPromise {
         let timeout = new Promise<T>((resolve, reject) => {
             let id = setTimeout(() => {
                 clearTimeout(id);
-                reject(`${descriptiveTaskName} timed out in ${isUserDecision ? TimeoutPromise.consoleUserInputPromiseTimeoutMs : TimeoutPromise.consolePromiseTimeoutMs}ms.`);
+                if (isUserDecision) {
+                    reject(new UserDecisionTimeoutException(descriptiveTaskName, TimeoutPromise.consoleUserInputPromiseTimeoutMs));
+                } else {
+                    reject(`${descriptiveTaskName} timed out in ${TimeoutPromise.consolePromiseTimeoutMs}ms.`);
+                }
             }, isUserDecision ? TimeoutPromise.consoleUserInputPromiseTimeoutMs : TimeoutPromise.consolePromiseTimeoutMs);
         })
 
@@ -26,5 +30,15 @@ export class TimeoutPromise {
             promise,
             timeout
         ]);
+    }
+}
+
+export class UserDecisionTimeoutException {
+    public readonly taskName: string;
+    public readonly timeOut: number;
+
+    constructor(taskName: string, timeOut: number) {
+        this.taskName = taskName;
+        this.timeOut = timeOut;
     }
 }
