@@ -7,7 +7,7 @@ Here are the features provided by this set of tools. They can all be configured 
 ### Demo Naming Helper
 This is what this toolbox was originally for. If you want to record your own POV demos and go back to them later, you need to have some sort of naming scheme to be able to find a specific demo again. I follow the naming scheme "[game mode]-[map name]-[mm-dd-yyyy]" for my demos and this tool helps automate the process by querying the game for the game mode and map name. Options for this utility can be configured in the `demo_naming_helper` of your `config.ini` file.
 
-If you want to use this tool but use a different naming scheme. Make a feature request, and I'll see what I can do to support your style of naming demos.
+If you want to use this tool but use a different naming scheme, make a feature request, and I'll see what I can do to support your style of naming demos.
 
 ### POV Demo Voice Recording
 This allows you to record your own voice in POV demos without having to hear yourself during the recording process.
