@@ -1,6 +1,6 @@
 # CS:GO Demo Utilities
 This is a collection of tools that I use when I play Counter-Strike: Global Offensive. They help me to record POV demos when I'm playing competitive matches. For information on what drove me to make this, see the [background section](#background) which I've mercifully moved to the bottom of the README because there's a lot to explain.
-
+ 
 ## Features
 Here are the features provided by this set of tools. They can all be configured through a `config.ini` that you will create in the installation process.
 
