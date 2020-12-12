@@ -13,7 +13,7 @@ If you want to use this tool but use a different naming scheme, make a feature r
 This allows you to record your own voice in POV demos without having to hear yourself during the recording process.
 
 Typically, if you want your voice to be audible in your POV demos, you have to turn on `voice_loopback` which will make you hear yourself twice. The solution is to turn on `voice_loopback` but turn down the volume of your voice to 0 with the `voice_player_volume` command. DemoRecordingHelper automates this process and can be configured in the `demo_recording_helper` section of your `config.ini` file.
-
+ 
 DemoPlaybackHelper is responsible for _unmuting_ the player who was muted by DemoRecordingHelper (if any).
 
 ## Installation
