@@ -162,8 +162,10 @@ export class DemoRecordingHelper implements ListenerService {
         DemoRecordingHelper.log.info("Applying recording preferences...");
         if (Config.getConfig().demo_recording_helper.record_my_voice_in_demos === "1") {
             Cvars.setCvar('voice_loopback', "1");
+            DemoRecordingHelper.log.info(`DemoHelper set voice_loopback 1.`);
         } else {
             Cvars.setCvar('voice_loopback', "0");
+            DemoRecordingHelper.log.info(`DemoHelper set voice_loopback 0.`);
         }
         let myName;
         try {
@@ -175,9 +177,11 @@ export class DemoRecordingHelper implements ListenerService {
         if (Config.getConfig().demo_recording_helper.mute_my_voice_while_recording === "1") {
             await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 0);
             SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 0.`);
+            DemoRecordingHelper.log.info(`DemoHelper set the volume of player ${myName} to 0.`);
         } else {
             await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 1);
             SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 1.`);
+            DemoRecordingHelper.log.info(`DemoHelper set the volume of player ${myName} to 1.`);
         }
         DemoRecordingHelper.log.info("Finished applying recording preferences.");
     }
