@@ -183,6 +183,8 @@ export class DemoRecordingHelper implements ListenerService {
     }
 
     private static async attemptStartRecording(demoName: string) {
+        await DemoRecordingHelper.applyRecordingPreferences();
+        DemoRecordingHelper.log.info(`Attempting to start recording...`);
         const recordResultLine = await SubscriberManager.searchForValue(`record ${demoName}`, DemoRecordingHelper.resultOfRecordCmdRegExp, false);
         const match = DemoRecordingHelper.resultOfRecordCmdRegExp.exec(recordResultLine);
         if (!match)
@@ -197,8 +199,6 @@ export class DemoRecordingHelper implements ListenerService {
             DemoRecordingHelper.log.info(match[2]);
             DemoRecordingHelper.log.info(`DemoHelper started recording demo '${match[3]}' successfully!`);
             DemoRecordingHelper.currentlyRecording = true;
-            await DemoRecordingHelper.applyRecordingPreferences();
-            DemoRecordingHelper.log.info(`Applied recording preferences and recorded a message in demo '${match[3]}'.`);
             ConsoleHelper.padConsole(5);
             SubscriberManager.sendMessage(`echo DemoHelper applied recording preferences and recorded a message in demo successfully!`);
         } else if (match[4]) {
