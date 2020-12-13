@@ -14,7 +14,7 @@
     "test": "echo \"Error: No tests exist\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Ryan Cloherty",
   "license": "ISC",
   "repository": {
     "type": "git",
