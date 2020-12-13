@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import {Config} from "./utils/Config";
 import {SubscriberManager} from './utils/SubscriberManager';
 import {existsSync} from 'fs';
