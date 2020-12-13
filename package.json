@@ -4,7 +4,7 @@
   "bin": {
     "csgo-demo-helper": "dist/Main.js"
   },
-  "description": "",
+  "description": "A CLI tool to assist with managing CS:GO demos",
   "main": "dist/Main.js",
   "types": "dist/Main.d.ts",
   "scripts": {
@@ -13,7 +13,18 @@
     "start": "echo \"Starting CS:GO Demo Helper\" && node dist/Main.js",
     "test": "echo \"Error: No tests exist\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "counter-strike",
+    "cs:go",
+    "csgo",
+    "demo",
+    "demos",
+    "replay",
+    "voice",
+    "loopback",
+    "voice_loopback",
+    "mute"
+  ],
   "author": "Ryan Cloherty",
   "license": "ISC",
   "repository": {
