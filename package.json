@@ -8,8 +8,8 @@
   "main": "dist/Main.js",
   "types": "dist/Main.d.ts",
   "scripts": {
-    "prepublish": "tsc",
-    "prestart": "tsc",
+    "prepublish": "node node_modules/typescript/bin/tsc",
+    "prestart": "node node_modules/typescript/bin/tsc",
     "start": "echo \"Starting CS:GO Demo Helper\" && node dist/Main.js",
     "test": "echo \"Error: No tests exist\" && exit 1"
   },
