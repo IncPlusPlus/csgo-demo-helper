@@ -9,8 +9,6 @@ updates:
       interval: weekly
     open-pull-requests-limit: 10
     target-branch: main
-    reviewers:
-      - IncPlusPlus
     assignees:
       - IncPlusPlus
   - package-ecosystem: github-actions
@@ -19,7 +17,5 @@ updates:
       interval: weekly
     open-pull-requests-limit: 10
     target-branch: main
-    reviewers:
-      - IncPlusPlus
     assignees:
       - IncPlusPlus
