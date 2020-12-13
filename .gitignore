@@ -1,6 +1,6 @@
 .idea
 # Output of compiling TypeScript to JS
-resources/static/out-tsc
+dist
 
 # You should never commit this as it contains YOUR private Steam Web API key. Make a copy of config.template.ini
 # and rename it to config.ini to use these utilities.

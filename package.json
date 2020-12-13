@@ -1,11 +1,16 @@
 {
-  "name": "csgo-demos-helper",
+  "name": "csgo-demo-helper",
   "version": "1.0.0",
+  "bin": {
+    "csgo-demo-helper": "dist/Main.js"
+  },
   "description": "",
-  "main": "resources/static/out-tsc/Main.js",
+  "main": "dist/Main.js",
+  "types": "dist/Main.d.ts",
   "scripts": {
+    "prepublish": "tsc",
     "prestart": "tsc",
-    "start": "echo \"Starting CS:GO Demo Helper\" && node resources/static/out-tsc/Main.js",
+    "start": "echo \"Starting CS:GO Demo Helper\" && node dist/Main.js",
     "test": "echo \"Error: No tests exist\" && exit 1"
   },
   "keywords": [],
