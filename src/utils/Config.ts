@@ -1,15 +1,18 @@
 import {parse} from 'ini';
-import {existsSync, readFileSync} from 'fs';
-import {configure, getLogger} from "log4js";
+import {constants, copyFileSync, existsSync, readFileSync} from 'fs';
+import {configure, getLogger} from 'log4js';
+import {join} from 'path';
 
 export class Config {
     private static config: { [p: string]: any };
+    private static config_path: string = join(__dirname, "..", "..", "config.ini");
+    private static config_template_path: string = join(__dirname, "..", "..", "config.template.ini");
 
     /**
      * DO NOT CALL THIS METHOD EVER. THIS IS FOR INTERNAL USE INSIDE Config.ts ONLY!!!!!
      */
     static _initialize() {
-        if (!existsSync('./config.ini')) {
+        if (!existsSync(Config.config_path)) {
             // noinspection SpellCheckingInspection
             configure({
                 appenders: {
@@ -19,11 +22,15 @@ export class Config {
                 categories: {default: {appenders: ['out', 'app'], level: 'info'}}
             });
             const log = getLogger('Config');
-            log.fatal('You haven\'t made a config.ini file yet.');
-            log.fatal('Please read the installation section of the README.md file to be able to use this program.');
-            throw Error('config.ini not found');
+            log.fatal(`Couldn't find 'config.ini' expected at path '${Config.config_path}'.`);
+            log.info(`It seems you haven't made a config.ini file yet. I'll make one for you now...`);
+            copyFileSync(Config.config_template_path, Config.config_path, constants.COPYFILE_EXCL);
+            log.info(`Created 'config.ini' at path ${Config.config_path}`);
+            log.info(`Please modify config.ini to match your desired settings and then launch this program again.`);
+            process.exit();
+            // throw Error(`config.ini not found at path '${Config.config_path}'`);
         }
-        Config.config = parse(readFileSync('./config.ini', 'utf-8'));
+        Config.config = parse(readFileSync(Config.config_path, 'utf-8'));
     }
 
     public static getConfig = (): { [p: string]: any } => {
@@ -42,5 +49,6 @@ export class Config {
 try {
     Config._initialize();
 } catch (e) {
-    process.kill(process.pid, 'SIGTERM');
+    throw e;
+    // process.kill(process.pid, 'SIGTERM');
 }
