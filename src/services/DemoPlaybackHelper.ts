@@ -1,5 +1,9 @@
 /*
  * See the top comment of DemoRecordingHelper for an explanation of what this class is responsible for.
+ *
+ * NOTE: YOU NO LONGER NEED TO HAVE THIS RUNNING WHEN PERFORMING DEMO PLAYBACK UNLESS THE DEMO WAS RECORDED
+ * WITH A VERSION EARLIER THAN 1.1.0!!! You'll know if you need this running if you
+ * notice yourself talking during demo playback but don't hear any audio.
  */
 
 import {Config} from "../utils/Config";
@@ -8,6 +12,12 @@ import {LogHelper} from "../utils/LogHelper";
 import {SubscriberManager} from "../utils/SubscriberManager";
 import {DemoRecordingHelper} from "./DemoRecordingHelper";
 
+/**
+ * DemoPlaybackHelper is responsible for listening to the console for messages left behind by DemoRecordingHelper.
+ * For instance, a message about a player being muted might have been left behind and DemoPlaybackHelper acts on this
+ * information by unmuting the player. This is just an example of its purpose and isn't actually necessary any more
+ * with demos recorded after the changes made in 1.1.0.
+ */
 export class DemoPlaybackHelper implements ListenerService {
     private static readonly log = LogHelper.getLogger('DemoPlaybackHelper');
     // private static readonly demoPlaybackRegExp = RegExp('^Playing demo from (.*)\\.dem\\.$');

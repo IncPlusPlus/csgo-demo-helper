@@ -30,7 +30,7 @@ you hear yourself twice. The solution is to turn on `voice_loopback` but turn do
 the `voice_player_volume` command. DemoRecordingHelper automates this process and can be configured in
 the `demo_recording_helper` section of your `config.ini` file.
 
-DemoPlaybackHelper is responsible for _unmuting_ the player who was muted by DemoRecordingHelper (if any).
+DemoPlaybackHelper ~~is~~ was previously responsible for _unmuting_ the player who was muted by DemoRecordingHelper (if any). As of version 1.1.0, it is no longer necessary to keep CS:GO Demo Helper running while playing a demo. However, demos recorded with versions of this tool prior to 1.1.0 will still need CS:GO Demo Helper running to unmute your voice.
 
 ## Prerequisites
 
