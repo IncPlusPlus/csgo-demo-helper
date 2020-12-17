@@ -1,0 +1,12 @@
+feature: [ 'feature/*', 'feat/*' ]
+bug: [ 'bug/*', 'fix/*', 'bugfix/*' ]
+chore: [ 'chore/*', 'maintenance/*' ]
+hotfix: hotfix/*
+🛠 Improvement: improvement/*
+
+
+# THE ITEMS BELOW ARE UNUSED FOR THIS REPO. I'm keeping them around just in case I split the workflow into a development branch.
+# Add a label for release-drafter to ignore this commit as it is probably just being used to get main/develop up to speed with the other
+ignore-develop-sync: main
+# Add a label for release-drafter to ignore this commit as it is probably just being used to get main/develop up to speed with the other
+ignore-main-sync: develop

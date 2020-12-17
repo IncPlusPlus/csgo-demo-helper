@@ -11,6 +11,9 @@ import {SubscriberManager} from "./SubscriberManager";
 import {LogHelper} from "./LogHelper";
 
 export class DemoNamingHelper {
+    /*
+     * Notes: game_mode 0 and game_type 4 (known as "cooperative") is also the combination for guardian
+     */
     // noinspection SpellCheckingInspection
     private static readonly gameModeStrings: string[][] = [
         ["casual", "armsrace", "training", "custom", "cooperative", "skirmish"],

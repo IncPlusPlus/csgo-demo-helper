@@ -1,35 +1,49 @@
 {
-  "name": "csgo-demos-helper",
-  "version": "1.0.0",
-  "description": "",
-  "main": "resources/static/out-tsc/Main.js",
+  "name": "csgo-demo-helper",
+  "version": "1.1.0",
+  "bin": {
+    "csgo-demo-helper": "dist/Main.js"
+  },
+  "description": "A CLI tool to assist with managing CS:GO demos",
+  "main": "dist/Main.js",
+  "types": "dist/Main.d.ts",
   "scripts": {
-    "prestart": "tsc",
-    "start": "echo \"Starting CS:GO Demo Helper\" && node resources/static/out-tsc/Main.js",
+    "prepublish": "node node_modules/typescript/bin/tsc",
+    "prestart": "node node_modules/typescript/bin/tsc",
+    "start": "echo \"Starting CS:GO Demo Helper\" && node dist/Main.js",
     "test": "echo \"Error: No tests exist\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "counter-strike",
+    "cs:go",
+    "csgo",
+    "demo",
+    "demos",
+    "replay",
+    "voice",
+    "loopback",
+    "voice_loopback",
+    "mute"
+  ],
+  "author": "Ryan Cloherty",
   "license": "ISC",
   "repository": {
     "type": "git",
     "url": "https://github.com/IncPlusPlus/csgo-demo-helper.git"
   },
-  "devDependencies": {
-    "@types/axios": "^0.14.0",
+  "dependencies": {
     "@types/ini": "^1.3.30",
     "@types/node": "^14.14.7",
-    "@types/p-defer": "^2.0.0",
     "@types/uuid": "^8.3.0",
     "@types/wait-on": "^5.2.0",
+    "axios": "^0.21.0",
     "ini": "^1.3.5",
     "log4js": "^6.3.0",
     "p-defer": "^3.0.0",
+    "ts-node": "^9.0.0",
     "typescript": "^4.0.5",
     "uuid": "^8.3.1",
     "wait-on": "^5.2.0"
   },
-  "dependencies": {
-    "ts-node": "^9.0.0"
-  }
+  "preferGlobal": true
 }
