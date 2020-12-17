@@ -1,6 +1,6 @@
 # CS:GO Demo Helper
 
-This is CLI tool that I use when I play Counter-Strike: Global Offensive. It has multiple features that help me record
+This is a CLI tool that I use when I play Counter-Strike: Global Offensive. It has multiple features that help me record
 POV demos when I'm playing competitive matches. For information on what drove me to make this, see
 the [background section](#background) which I've mercifully moved to the bottom of the README because there's a lot to
 explain.
