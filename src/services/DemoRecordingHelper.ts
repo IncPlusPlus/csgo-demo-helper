@@ -158,7 +158,8 @@ export class DemoRecordingHelper implements ListenerService {
         await DemoRecordingHelper.attemptStartRecording(demoName);
     }
 
-    private static async applyRecordingPreferences() {
+    private static async applyRecordingPreferences(): Promise<string[]> {
+        let thingsToPrintToConsole = [];
         DemoRecordingHelper.log.info("Applying recording preferences...");
         if (Config.getConfig().demo_recording_helper.record_my_voice_in_demos === "1") {
             Cvars.setCvar('voice_loopback', "1");
@@ -174,16 +175,17 @@ export class DemoRecordingHelper implements ListenerService {
         }
         if (Config.getConfig().demo_recording_helper.mute_my_voice_while_recording === "1") {
             await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 0);
-            SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 0.`);
+            thingsToPrintToConsole.push(`echo DemoHelper set the volume of player ${myName} to 0.`);
         } else {
             await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 1);
-            SubscriberManager.sendMessage(`echo DemoHelper set the volume of player ${myName} to 1.`);
+            thingsToPrintToConsole.push(`echo DemoHelper set the volume of player ${myName} to 1.`);
         }
         DemoRecordingHelper.log.info("Finished applying recording preferences.");
+        return thingsToPrintToConsole;
     }
 
     private static async attemptStartRecording(demoName: string) {
-        await DemoRecordingHelper.applyRecordingPreferences();
+        const thingsToPrintToConsole = await DemoRecordingHelper.applyRecordingPreferences();
         DemoRecordingHelper.log.info(`Attempting to start recording...`);
         const recordResultLine = await SubscriberManager.searchForValue(`record ${demoName}`, DemoRecordingHelper.resultOfRecordCmdRegExp, false);
         const match = DemoRecordingHelper.resultOfRecordCmdRegExp.exec(recordResultLine);
@@ -201,6 +203,7 @@ export class DemoRecordingHelper implements ListenerService {
             DemoRecordingHelper.currentlyRecording = true;
             ConsoleHelper.padConsole(5);
             SubscriberManager.sendMessage(`echo DemoHelper applied recording preferences and recorded a message in demo successfully!`);
+            SubscriberManager.sendMessage(thingsToPrintToConsole);
         } else if (match[4]) {
             //Please start demo recording after current round is over.
             // noinspection SpellCheckingInspection
