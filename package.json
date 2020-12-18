@@ -13,7 +13,7 @@
     "start": "echo \"Starting CS:GO Demo Helper\" && node dist/Main.js",
     "pretest": "node node_modules/typescript/bin/tsc",
     "test": "mocha -r ts-node/register test/**/*.test.ts",
-    "coverage": "nyc -r text -e .ts -x \"test/*.test.ts\" npm run test"
+    "coverage": "nyc -r text -e .ts -x \"test/**/*.test.ts\" npm run test"
   },
   "keywords": [
     "counter-strike",
