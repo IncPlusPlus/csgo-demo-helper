@@ -8,10 +8,13 @@ export class Config {
     private static config_path: string = join(__dirname, "..", "..", "config.ini");
     private static config_template_path: string = join(__dirname, "..", "..", "config.template.ini");
 
+    //TODO: Split _initialize() into two functions. One checks if the file exists and creates it if not, the other validates the ini
     /**
      * DO NOT CALL THIS METHOD EVER. THIS IS FOR INTERNAL USE INSIDE Config.ts ONLY!!!!!
+     * @param inTest set this to true to avoid log output during tests
+     * @returns false if config.ini didn't exist and had to be created; true if read successfully
      */
-    static _initialize() {
+    static _initialize(inTest = false): boolean {
         if (!existsSync(Config.config_path)) {
             // noinspection SpellCheckingInspection
             configure({
@@ -19,7 +22,7 @@ export class Config {
                     out: {type: 'stdout'},
                     app: {type: 'file', filename: 'application.log'}
                 },
-                categories: {default: {appenders: ['out', 'app'], level: 'info'}}
+                categories: {default: {appenders: ['out', 'app'], level: `${inTest ? 'OFF' : 'info'}`}}
             });
             const log = getLogger('Config');
             log.fatal(`Couldn't find 'config.ini' expected at path '${Config.config_path}'.`);
@@ -27,10 +30,11 @@ export class Config {
             copyFileSync(Config.config_template_path, Config.config_path, constants.COPYFILE_EXCL);
             log.info(`Created 'config.ini' at path ${Config.config_path}`);
             log.info(`Please modify config.ini to match your desired settings and then launch this program again.`);
-            process.exit();
+            return false;
             // throw Error(`config.ini not found at path '${Config.config_path}'`);
         }
         Config.config = parse(readFileSync(Config.config_path, 'utf-8'));
+        return true;
     }
 
     public static getConfig = (): { [p: string]: any } => {
@@ -51,7 +55,9 @@ export class Config {
  * properties from an undefined dictionary occur. I found this handy-dandy solution at https://stackoverflow.com/a/57097362/1687436
  */
 try {
-    Config._initialize();
+    if (!Config._initialize()) {
+        process.exit();
+    }
 } catch (e) {
     throw e;
     // process.kill(process.pid, 'SIGTERM');
