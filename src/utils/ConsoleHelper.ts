@@ -2,7 +2,7 @@
  * Small tools to help with console interaction
  */
 
-import {SubscriberManager} from "./SubscriberManager";
+import {SubscriberManagerFactory} from "./SubscriberManagerFactory";
 
 //TODO: Remove padding from messages and just use the method available in ConsoleHelper
 export class ConsoleHelper {
@@ -22,30 +22,30 @@ export class ConsoleHelper {
     ];
 
     public static clearConsole = (): void => {
-        SubscriberManager.sendMessage('clear');
+        SubscriberManagerFactory.getSubscriberManager().sendMessage('clear');
     }
 
     public static padConsole = (lines: number): void => {
         for (let i = 0; i < lines; i++) {
-            SubscriberManager.sendMessage('echo');
+            SubscriberManagerFactory.getSubscriberManager().sendMessage('echo');
         }
     }
 
     public static showConsole = (): void => {
-        SubscriberManager.sendMessage('showconsole');
+        SubscriberManagerFactory.getSubscriberManager().sendMessage('showconsole');
     }
 
     public static hideConsole = (): void => {
-        SubscriberManager.sendMessage('hideconsole');
+        SubscriberManagerFactory.getSubscriberManager().sendMessage('hideconsole');
     }
 
     public static printWelcomeMessage = (): void => {
         const message = ConsoleHelper.WelcomeMessage.map(value => "echo \"" + value + "\"");
-        SubscriberManager.sendMessage(message);
+        SubscriberManagerFactory.getSubscriberManager().sendMessage(message);
     }
 
     public static printHelpMessage = (): void => {
         const message = ConsoleHelper.HelpMessage.map(value => "echo \"" + value + "\"");
-        SubscriberManager.sendMessage(message);
+        SubscriberManagerFactory.getSubscriberManager().sendMessage(message);
     }
 }

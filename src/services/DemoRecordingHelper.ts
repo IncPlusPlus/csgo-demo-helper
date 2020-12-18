@@ -19,7 +19,6 @@
 import {Config} from "../utils/Config";
 import {existsSync} from 'fs';
 import {DemoNamingHelper} from "../utils/DemoNamingHelper";
-import {SubscriberManager} from "../utils/SubscriberManager";
 import {ConsoleHelper} from "../utils/ConsoleHelper";
 import {SteamID} from "../utils/SteamID";
 import {LogHelper} from "../utils/LogHelper";
@@ -28,6 +27,7 @@ import {Cvars} from "../utils/Cvars";
 import {UserDecisionTimeoutException} from "../utils/TimeoutPromise";
 import {ListenerService} from "../ListenerService";
 import {Pair} from "../utils/Pair";
+import {SubscriberManagerFactory} from "../utils/SubscriberManagerFactory";
 
 export class DemoRecordingHelper implements ListenerService {
     private static readonly log = LogHelper.getLogger('DemoRecordingHelper');
@@ -95,7 +95,7 @@ export class DemoRecordingHelper implements ListenerService {
         let highestPartNumber = existingDemoInfo[1];
         let promptMessage = [`Demo with name '${mostRecentDemoName}' already exists.`, `If you want to record a new demo, use the command 'echo dh new'.`, `This will make a demo named '${demoName}-${highestDemoNumber + 1}'.`, `If you're rejoining a game and want to pick up where you left off, use the command 'echo dh split'.`, `This will make a demo named '${demoName}${highestDemoNumber > 1 ? `-${highestDemoNumber}` : ``}-pt${highestPartNumber + 1}'.`, `Use the command 'echo dh cancel' to back out of this prompt and cancel the request to record.`];
         promptMessage = promptMessage.map(value => "echo \"" + value + "\"");
-        const decisionLine = await SubscriberManager.searchForValue(promptMessage, DemoRecordingHelper.recordSplitOrNewDemoRegExp, true);
+        const decisionLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue(promptMessage, DemoRecordingHelper.recordSplitOrNewDemoRegExp, true);
         const userDecision = DemoRecordingHelper.recordSplitOrNewDemoRegExp.exec(decisionLine);
         if (!userDecision) {
             throw Error('User response for whether to record new or split demo came back null!!!!')
@@ -140,7 +140,7 @@ export class DemoRecordingHelper implements ListenerService {
                 const t = e as UserDecisionTimeoutException;
                 if (t && t.taskName) {
                     ConsoleHelper.padConsole(5);
-                    SubscriberManager.sendMessage(`echo \"Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...\"`)
+                    SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo \"Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...\"`)
                     ConsoleHelper.padConsole(5);
                     DemoRecordingHelper.log.warn(`Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...`)
                     demoName = '';
@@ -152,7 +152,7 @@ export class DemoRecordingHelper implements ListenerService {
             }
             if (!demoName) {
                 //User cancelled the request to record a demo
-                SubscriberManager.sendMessage('echo Cancelling');
+                SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Cancelling');
                 DemoRecordingHelper.log.debug('User cancelled when prompted whether to split or make a new demo.');
                 return;
             }
@@ -193,28 +193,28 @@ export class DemoRecordingHelper implements ListenerService {
     private static async attemptStartRecording(demoName: string) {
         const thingsToPrintToConsole = await DemoRecordingHelper.applyRecordingPreferences();
         DemoRecordingHelper.log.info(`Attempting to start recording...`);
-        const recordResultLine = await SubscriberManager.searchForValue(`record ${demoName}`, DemoRecordingHelper.resultOfRecordCmdRegExp, false);
+        const recordResultLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue(`record ${demoName}`, DemoRecordingHelper.resultOfRecordCmdRegExp, false);
         const match = DemoRecordingHelper.resultOfRecordCmdRegExp.exec(recordResultLine);
         if (!match)
             throw Error('The match for the expected result of running the record command came back null. What are you doing, man?');
         if (match[1]) {
             //Already recording
-            SubscriberManager.sendMessage('echo Already recording a demo!!');
+            SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Already recording a demo!!');
         } else if (match[2]) {
             //Recording properly started. All clear
             ConsoleHelper.padConsole(5);
-            SubscriberManager.sendMessage(`echo DemoHelper started recording demo successfully!`);
+            SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo DemoHelper started recording demo successfully!`);
             DemoRecordingHelper.log.info(match[2]);
             DemoRecordingHelper.log.info(`DemoHelper started recording demo '${match[3]}' successfully!`);
             DemoRecordingHelper.currentlyRecording = true;
             ConsoleHelper.padConsole(5);
-            SubscriberManager.sendMessage(`echo DemoHelper applied recording preferences and recorded a message in demo successfully!`);
-            SubscriberManager.sendMessage(thingsToPrintToConsole);
+            SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo DemoHelper applied recording preferences and recorded a message in demo successfully!`);
+            SubscriberManagerFactory.getSubscriberManager().sendMessage(thingsToPrintToConsole);
         } else if (match[4]) {
             //Please start demo recording after current round is over.
             // noinspection SpellCheckingInspection
-            SubscriberManager.sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
-            await SubscriberManager.searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp, false);
+            SubscriberManagerFactory.getSubscriberManager().sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
+            await SubscriberManagerFactory.getSubscriberManager().searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp, false);
             await DemoRecordingHelper.attemptStartRecording(demoName);
         }
     }

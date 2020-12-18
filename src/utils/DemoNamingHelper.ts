@@ -7,8 +7,8 @@
  */
 
 import {Cvars} from "./Cvars";
-import {SubscriberManager} from "./SubscriberManager";
 import {LogHelper} from "./LogHelper";
+import {SubscriberManagerFactory} from "./SubscriberManagerFactory";
 
 export class DemoNamingHelper {
     /*
@@ -47,7 +47,7 @@ export class DemoNamingHelper {
     }
 
     public static getMapName = async (excludePrefix: boolean): Promise<string> => {
-        const mapLine = await SubscriberManager.searchForValue('status', DemoNamingHelper.mapFromStatusRegExp, false);
+        const mapLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('status', DemoNamingHelper.mapFromStatusRegExp, false);
         const mapName = DemoNamingHelper.mapFromStatusRegExp.exec(mapLine);
         if (mapName) {
             if (excludePrefix) {

@@ -1,7 +1,7 @@
 import pDefer = require("p-defer");
 import {LogHelper} from "./LogHelper";
-import {SubscriberManager} from "./SubscriberManager";
 import {ListenerService} from "../ListenerService";
+import {SubscriberManagerFactory} from "./SubscriberManagerFactory";
 
 export class VoicePlayerVolume {
     private static readonly log = LogHelper.getLogger('VoicePlayerVolume');
@@ -17,15 +17,15 @@ export class VoicePlayerVolume {
     }
 
     public static setVoicePlayerVolume = (playerNumber: number, volume: number) => {
-        SubscriberManager.sendMessage(`voice_player_volume ${playerNumber} ${volume}`);
+        SubscriberManagerFactory.getSubscriberManager().sendMessage(`voice_player_volume ${playerNumber} ${volume}`);
     }
 
     public static getVoicePlayerVolumeValues = async (): Promise<{ Volume: number; PlayerName: string; PlayerNumber: number }[]> => {
         const deferred: pDefer.DeferredPromise<{ Volume: number; PlayerName: string; PlayerNumber: number }[]> = pDefer();
         const listener = new VoicePlayerVolumeListener(deferred);
-        SubscriberManager.subscribe(listener);
-        SubscriberManager.sendMessage('voice_player_volume');
-        deferred.promise.then(() => SubscriberManager.unsubscribe(listener));
+        SubscriberManagerFactory.getSubscriberManager().subscribe(listener);
+        SubscriberManagerFactory.getSubscriberManager().sendMessage('voice_player_volume');
+        deferred.promise.then(() => SubscriberManagerFactory.getSubscriberManager().unsubscribe(listener));
         return deferred.promise;
     }
 }

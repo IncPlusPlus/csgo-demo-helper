@@ -9,9 +9,9 @@
 import {Config} from "../utils/Config";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {LogHelper} from "../utils/LogHelper";
-import {SubscriberManager} from "../utils/SubscriberManager";
 import {DemoRecordingHelper} from "./DemoRecordingHelper";
 import {ListenerService} from "../ListenerService";
+import {SubscriberManagerFactory} from "../utils/SubscriberManagerFactory";
 
 /**
  * DemoPlaybackHelper is responsible for listening to the console for messages left behind by DemoRecordingHelper.
@@ -59,7 +59,7 @@ export class DemoPlaybackHelper implements ListenerService {
     }
 
     private static getCurrentDemoName = async (): Promise<string> => {
-        const consoleLine = await SubscriberManager.searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp, false);
+        const consoleLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp, false);
         const match = DemoPlaybackHelper.demoInfoRegExp.exec(consoleLine);
         if (!match)
             throw Error(`Failed to execute RegExp on the console's response to demo_info.`);
