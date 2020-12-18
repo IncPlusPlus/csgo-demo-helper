@@ -46,7 +46,7 @@ export class SubscriberManager {
         window: 500, // stabilization time in ms, default 750ms
     };
 
-    private socket: Socket = new Socket;
+    private socket: Socket | undefined;
     private reader: ReadLine | undefined;
     /** These subscribers are expecting one or more lines of text, unprompted. They're here to stay for the most part. */
     private subscribers: ListenerService[] = [];
@@ -185,12 +185,12 @@ export class SubscriberManager {
         if (Array.isArray(commandOrArray)) {
             for (let command of commandOrArray) {
                 this.log.debug(`Writing to CStrike console: '${command}'`);
-                this.socket.write(`${command}\n`);
+                this.socket?.write(`${command}\n`);
             }
             //TODO: Research if there's a better way to use varargs in TypeScript :)
         } else {
             this.log.debug(`Writing to CStrike console: '${commandOrArray}'`);
-            this.socket.write(`${commandOrArray}\n`);
+            this.socket?.write(`${commandOrArray}\n`);
         }
     }
 
