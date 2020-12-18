@@ -6,14 +6,14 @@ import {SubscriberManager} from "./SubscriberManager";
 
 //TODO: Remove padding from messages and just use the method available in ConsoleHelper
 export class ConsoleHelper {
-    private static readonly welcomeMessage: string[] = [
+    public static readonly WelcomeMessage: string[] = [
         "Welcome to IncPlusPlus's CS:GO QOS utils!",
         "Type 'echo ds help' for available commands.",
         "",
         "",
         "",
     ];
-    private static readonly helpMessage: string[] = [
+    public static readonly HelpMessage: string[] = [
         "Type 'dh rec' to record a new POV demo.",
         "That's really all that there is for now...",
         "",
@@ -40,12 +40,12 @@ export class ConsoleHelper {
     }
 
     public static printWelcomeMessage = (): void => {
-        const message = ConsoleHelper.welcomeMessage.map(value => "echo \"" + value + "\"");
+        const message = ConsoleHelper.WelcomeMessage.map(value => "echo \"" + value + "\"");
         SubscriberManager.sendMessage(message);
     }
 
     public static printHelpMessage = (): void => {
-        const message = ConsoleHelper.helpMessage.map(value => "echo \"" + value + "\"");
+        const message = ConsoleHelper.HelpMessage.map(value => "echo \"" + value + "\"");
         SubscriberManager.sendMessage(message);
     }
 }
