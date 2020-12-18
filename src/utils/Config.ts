@@ -36,6 +36,10 @@ export class Config {
     public static getConfig = (): { [p: string]: any } => {
         return Config.config;
     }
+
+    public static csgoExeExists(): boolean {
+        return existsSync(join(Config.config.csgo.csgo_demos_folder, "..", "csgo.exe"));
+    }
 }
 
 /*
