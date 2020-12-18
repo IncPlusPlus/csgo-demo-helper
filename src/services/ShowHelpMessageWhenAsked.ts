@@ -1,14 +1,14 @@
 import {ConsoleHelper} from "../utils/ConsoleHelper";
 
-const helpCommand = 'dh help';
-
 export class ShowHelpMessageWhenAsked implements ListenerService {
+    public static readonly HelpCommand = 'dh help';
+
     name(): string {
         return ShowHelpMessageWhenAsked.name;
     }
 
     canHandle(consoleLine: string): boolean {
-        return consoleLine === helpCommand;
+        return consoleLine === ShowHelpMessageWhenAsked.HelpCommand;
     }
 
     async handleLine(consoleLine: string): Promise<void> {
