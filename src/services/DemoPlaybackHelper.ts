@@ -11,6 +11,7 @@ import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {LogHelper} from "../utils/LogHelper";
 import {SubscriberManager} from "../utils/SubscriberManager";
 import {DemoRecordingHelper} from "./DemoRecordingHelper";
+import {ListenerService} from "../ListenerService";
 
 /**
  * DemoPlaybackHelper is responsible for listening to the console for messages left behind by DemoRecordingHelper.

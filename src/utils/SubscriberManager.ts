@@ -11,6 +11,8 @@ import {LogHelper} from "./LogHelper";
 import {Config} from "./Config";
 import {TimeoutPromise} from "./TimeoutPromise";
 import pDefer = require('p-defer');
+import {ListenerService} from "../ListenerService";
+import {Pair} from './Pair';
 
 const waitOn = require("wait-on");
 

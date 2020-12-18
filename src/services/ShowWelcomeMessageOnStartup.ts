@@ -1,4 +1,5 @@
 import {ConsoleHelper} from "../utils/ConsoleHelper";
+import {ListenerService} from "../ListenerService";
 
 const csgoStartupFinishedString = 'ChangeGameUIState: CSGO_GAME_UI_STATE_INTROMOVIE -> CSGO_GAME_UI_STATE_MAINMENU';
 

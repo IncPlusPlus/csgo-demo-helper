@@ -26,6 +26,8 @@ import {LogHelper} from "../utils/LogHelper";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {Cvars} from "../utils/Cvars";
 import {UserDecisionTimeoutException} from "../utils/TimeoutPromise";
+import {ListenerService} from "../ListenerService";
+import {Pair} from "../utils/Pair";
 
 export class DemoRecordingHelper implements ListenerService {
     private static readonly log = LogHelper.getLogger('DemoRecordingHelper');

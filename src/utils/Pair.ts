@@ -1,1 +1,1 @@
-type Pair<T, K> = [T, K];
+export type Pair<T, K> = [T, K];

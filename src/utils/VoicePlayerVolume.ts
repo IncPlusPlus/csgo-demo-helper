@@ -1,6 +1,7 @@
 import pDefer = require("p-defer");
 import {LogHelper} from "./LogHelper";
 import {SubscriberManager} from "./SubscriberManager";
+import {ListenerService} from "../ListenerService";
 
 export class VoicePlayerVolume {
     private static readonly log = LogHelper.getLogger('VoicePlayerVolume');

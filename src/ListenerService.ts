@@ -1,4 +1,4 @@
-interface ListenerService {
+export interface ListenerService {
     name(): string;
 
     canHandle(consoleLine: string): boolean;

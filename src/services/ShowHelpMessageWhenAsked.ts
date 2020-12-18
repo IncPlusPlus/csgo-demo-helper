@@ -1,4 +1,5 @@
 import {ConsoleHelper} from "../utils/ConsoleHelper";
+import {ListenerService} from "../ListenerService";
 
 export class ShowHelpMessageWhenAsked implements ListenerService {
     public static readonly HelpCommand = 'dh help';
