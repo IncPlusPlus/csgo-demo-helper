@@ -8,14 +8,13 @@ export class Config {
     private static config_path: string = join(__dirname, "..", "..", "config.ini");
     private static config_template_path: string = join(__dirname, "..", "..", "config.template.ini");
 
-    //TODO: Split _initialize() into two functions. One checks if the file exists and creates it if not, the other validates the ini
     /**
      * DO NOT CALL THIS METHOD EVER. THIS IS FOR INTERNAL USE INSIDE Config.ts ONLY!!!!!
      * @param inTest set this to true to avoid log output during tests
      * @returns false if config.ini didn't exist and had to be created; true if read successfully
      */
     static _initialize(inTest = false): boolean {
-        if (!existsSync(Config.config_path)) {
+        if (!Config.configExists()) {
             // noinspection SpellCheckingInspection
             configure({
                 appenders: {
@@ -34,10 +33,25 @@ export class Config {
             // throw Error(`config.ini not found at path '${Config.config_path}'`);
         }
         Config.config = parse(readFileSync(Config.config_path, 'utf-8'));
+        if (!Config.configValid()) {
+            //TODO: Check that all settings used by CS:GO Demo Manager are present and valid
+        }
+        return true;
+    }
+
+    static configExists(): boolean {
+        return existsSync(Config.config_path);
+    }
+
+    static configValid(): boolean {
+        //TODO: Implement
         return true;
     }
 
     public static getConfig = (): { [p: string]: any } => {
+        if (!Config.config) {
+            Config._initialize();
+        }
         return Config.config;
     }
 
@@ -54,11 +68,11 @@ export class Config {
  * This fails fast and lets the error thrown propagate to the top and exit before any errors arise from getting
  * properties from an undefined dictionary occur. I found this handy-dandy solution at https://stackoverflow.com/a/57097362/1687436
  */
-try {
-    if (!Config._initialize()) {
-        process.exit();
-    }
-} catch (e) {
-    throw e;
-    // process.kill(process.pid, 'SIGTERM');
-}
+// try {
+//     if (!Config._initialize()) {
+//         process.exit();
+//     }
+// } catch (e) {
+//     throw e;
+//     // process.kill(process.pid, 'SIGTERM');
+// }
