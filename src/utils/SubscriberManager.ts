@@ -8,17 +8,17 @@ import {createInterface, ReadLine} from 'readline';
 import {connect, Socket} from 'net';
 import {v4} from 'uuid';
 import {LogHelper} from "./LogHelper";
-import {Config} from "./Config";
 import {TimeoutPromise} from "./TimeoutPromise";
 import {ListenerService} from "../ListenerService";
 import {Pair} from './Pair';
+import {ConfigFactory} from "./ConfigFactory";
 import pDefer = require('p-defer');
 
 const waitOn = require("wait-on");
 
 export class SubscriberManager {
     private readonly cvarEchoRegExp: RegExp = RegExp('^\"([a-zA-Z_]+)\" = \"(\\d+)\".*');
-    private readonly config: { [p: string]: any } = Config.getConfig();
+    private readonly config: { [p: string]: any } = ConfigFactory.getConfigInstance().getConfig();
     private readonly port: number = this.config.csgo.netcon_port;
     private readonly log = LogHelper.getLogger('SubscriberManager');
     private readonly subscriberLog = LogHelper.getLogger('SubscriberManager.subscribers');
@@ -199,7 +199,7 @@ export class SubscriberManager {
         this.subscribedCvarValues.push([cvarName, deferred]);
         this.sendMessage(cvarName);
         this.cvarSubscribersLog.debug(`Added '${cvarName}' to the cvar subscribers list.`)
-        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
+        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
     }
 
     public searchForValue = (command: string | string[], regex: RegExp, isUserDecision: boolean) => {
@@ -207,7 +207,7 @@ export class SubscriberManager {
         this.specialOutputGrabbers.push([regex, deferred]);
         this.sendMessage(command);
         this.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`)
-        return TimeoutPromise.timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision);
+        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision);
     }
 
     public subscribe = (listener: ListenerService) => {

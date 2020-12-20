@@ -6,12 +6,12 @@
  * notice yourself talking during demo playback but don't hear any audio.
  */
 
-import {Config} from "../utils/Config";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {LogHelper} from "../utils/LogHelper";
 import {DemoRecordingHelper} from "./DemoRecordingHelper";
 import {ListenerService} from "../ListenerService";
 import {SubscriberManagerFactory} from "../utils/SubscriberManagerFactory";
+import {ConfigFactory} from "../utils/ConfigFactory";
 
 /**
  * DemoPlaybackHelper is responsible for listening to the console for messages left behind by DemoRecordingHelper.
@@ -38,7 +38,7 @@ export class DemoPlaybackHelper implements ListenerService {
     async handleLine(consoleLine: string): Promise<void> {
         if (await DemoPlaybackHelper.currentlyPlayingADemo()) {
             if (DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine)) {
-                if (Config.getConfig().demo_playback_helper.playback_voice_player_volume === "1") {
+                if (ConfigFactory.getConfigInstance().getConfig().demo_playback_helper.playback_voice_player_volume === "1") {
                     const match = DemoPlaybackHelper.playerMutedByDemoHelperRegExp.exec(consoleLine);
                     if (!match)
                         throw Error('Got null match when determining player name from the message left behind in the demo.');

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import {Config} from "./utils/Config";
 import {ShowWelcomeMessageOnStartup} from "./services/ShowWelcomeMessageOnStartup";
 import {DemoRecordingHelper} from "./services/DemoRecordingHelper";
 import {DemoPlaybackHelper} from "./services/DemoPlaybackHelper";
@@ -7,14 +6,15 @@ import {LogHelper} from "./utils/LogHelper";
 import {ShowHelpMessageWhenAsked} from "./services/ShowHelpMessageWhenAsked";
 import {join} from "path";
 import {SubscriberManagerFactory} from "./utils/SubscriberManagerFactory";
+import {ConfigFactory} from "./utils/ConfigFactory";
 
 const log = LogHelper.getLogger('Main');
 
 (async () => {
-    LogHelper.configure();
+    LogHelper.configure(ConfigFactory.getConfigInstance());
     const subscriberManager = SubscriberManagerFactory.getSubscriberManager();
-    if (!Config.csgoExeExists()) {
-        log.fatal(`Couldn't find CS:GO's executable at the path '${join(Config.getConfig().csgo.csgo_demos_folder, "..", "csgo.exe")}'.`);
+    if (!ConfigFactory.getConfigInstance().csgoExeExists()) {
+        log.fatal(`Couldn't find CS:GO's executable at the path '${join(ConfigFactory.getConfigInstance().getConfig().csgo.csgo_demos_folder, "..", "csgo.exe")}'.`);
         log.fatal(`This means that DemoRecordingHelper will be unable to locate the demos folder to check for name conflicts.`);
         throw Error('csgo_demos_folder in config.ini is misconfigured.');
     }

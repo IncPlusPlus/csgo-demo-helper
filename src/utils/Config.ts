@@ -4,17 +4,12 @@ import {configure, getLogger} from 'log4js';
 import {join} from 'path';
 
 export class Config {
-    private static config: { [p: string]: any };
-    private static config_path: string = join(__dirname, "..", "..", "config.ini");
-    private static config_template_path: string = join(__dirname, "..", "..", "config.template.ini");
+    private config: { [p: string]: any };
+    private config_path: string = join(__dirname, "..", "..", "config.ini");
+    private config_template_path: string = join(__dirname, "..", "..", "config.template.ini");
 
-    /**
-     * DO NOT CALL THIS METHOD EVER. THIS IS FOR INTERNAL USE INSIDE Config.ts ONLY!!!!!
-     * @param inTest set this to true to avoid log output during tests
-     * @returns false if config.ini didn't exist and had to be created; true if read successfully
-     */
-    static _initialize(inTest = false): boolean {
-        if (!Config.configExists()) {
+    constructor(inTest = false) {
+        if (!this.configExists()) {
             // noinspection SpellCheckingInspection
             configure({
                 appenders: {
@@ -24,55 +19,45 @@ export class Config {
                 categories: {default: {appenders: ['out', 'app'], level: `${inTest ? 'OFF' : 'info'}`}}
             });
             const log = getLogger('Config');
-            log.fatal(`Couldn't find 'config.ini' expected at path '${Config.config_path}'.`);
+            log.fatal(`Couldn't find 'config.ini' expected at path '${this.config_path}'.`);
             log.info(`It seems you haven't made a config.ini file yet. I'll make one for you now...`);
-            copyFileSync(Config.config_template_path, Config.config_path, constants.COPYFILE_EXCL);
-            log.info(`Created 'config.ini' at path ${Config.config_path}`);
+            copyFileSync(this.config_template_path, this.config_path, constants.COPYFILE_EXCL);
+            log.info(`Created 'config.ini' at path ${this.config_path}`);
             log.info(`Please modify config.ini to match your desired settings and then launch this program again.`);
-            return false;
-            // throw Error(`config.ini not found at path '${Config.config_path}'`);
+            throw Error(`config.ini not found at path '${this.config_path}'`);
         }
-        Config.config = parse(readFileSync(Config.config_path, 'utf-8'));
-        if (!Config.configValid()) {
+        this.config = parse(readFileSync(this.config_path, 'utf-8'));
+        if (!this.configValid()) {
             //TODO: Check that all settings used by CS:GO Demo Manager are present and valid
         }
-        return true;
     }
 
-    static configExists(): boolean {
-        return existsSync(Config.config_path);
+    /**
+     * DO NOT CALL THIS METHOD EVER. THIS IS FOR INTERNAL USE INSIDE Config.ts ONLY!!!!!
+     * @param inTest set this to true to avoid log output during tests
+     * @returns false if config.ini didn't exist and had to be created; true if read successfully
+     */
+    _initialize(inTest = false): boolean {
+        return false;
     }
 
-    static configValid(): boolean {
+    configExists(): boolean {
+        return existsSync(this.config_path);
+    }
+
+    configValid(): boolean {
         //TODO: Implement
         return true;
     }
 
-    public static getConfig = (): { [p: string]: any } => {
-        if (!Config.config) {
-            Config._initialize();
+    public getConfig = (): { [p: string]: any } => {
+        if (!this.config) {
+            this._initialize();
         }
-        return Config.config;
+        return this.config;
     }
 
-    public static csgoExeExists(): boolean {
-        return existsSync(join(Config.config.csgo.csgo_demos_folder, "..", "csgo.exe"));
+    public csgoExeExists(): boolean {
+        return existsSync(join(this.config.csgo.csgo_demos_folder, "..", "csgo.exe"));
     }
 }
-
-/*
- * This runs the _initialize method as soon as this class is declared The reason for doing this (and for configuring
- * a logger separately from LogHelper) is to be able to properly alert the user that they haven't configured
- * their config.ini file before other classes that statically access Config.getConfig() run into errors.
- *
- * This fails fast and lets the error thrown propagate to the top and exit before any errors arise from getting
- * properties from an undefined dictionary occur. I found this handy-dandy solution at https://stackoverflow.com/a/57097362/1687436
- */
-// try {
-//     if (!Config._initialize()) {
-//         process.exit();
-//     }
-// } catch (e) {
-//     throw e;
-//     // process.kill(process.pid, 'SIGTERM');
-// }
