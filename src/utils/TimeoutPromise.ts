@@ -20,7 +20,7 @@ export class TimeoutPromise {
                 if (isUserDecision) {
                     reject(new UserDecisionTimeoutException(descriptiveTaskName, this.consoleUserInputPromiseTimeoutMs));
                 } else {
-                    reject(`${descriptiveTaskName} timed out in ${this.consolePromiseTimeoutMs}ms.`);
+                    reject(Error(`${descriptiveTaskName} timed out in ${this.consolePromiseTimeoutMs}ms.`));
                 }
             }, isUserDecision ? this.consoleUserInputPromiseTimeoutMs : this.consolePromiseTimeoutMs);
         })
