@@ -1,7 +1,4 @@
 import {ImportMock, MockManager} from 'ts-mock-imports';
-import * as mock from 'mock-fs';
-import {join} from "path";
-import {stringify} from "ini";
 import * as configModule from "../../src/utils/Config";
 import {Config} from "../../src/utils/Config";
 import {SubscriberManager} from "../../src/utils/SubscriberManager";
@@ -11,7 +8,6 @@ import _ = require("mitm");
 describe("SubscriberManager", function () {
     let configMock: MockManager<configModule.Config>;
     let mitm = _();
-    const config_directory: string = join(__dirname, "..", "..");
     let config: { [p: string]: any } = {
         steam: {
             steam_web_api_key: 'XXXXXXXXXXXXXXXXXXXXXXX',
@@ -36,24 +32,11 @@ describe("SubscriberManager", function () {
 
     beforeEach(function () {
         configMock = ImportMock.mockClass(configModule, 'Config');
-        mock({
-            get [join(config_directory, "config.ini")]() {
-                return stringify(config);
-            },
-            get [join(config_directory, "config.template.ini")]() {
-                return stringify(config);
-            },
-            'C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive': {
-                //csgo.exe just needs to exist. We don't read the content so it's fine to just have placeholder content
-                'csgo.exe': Buffer.from([8, 6, 7, 5, 3, 0, 9]),
-            },
-        });
         mitm = _();
         configMock.mock('getConfig', config);
     })
 
     afterEach(function () {
-        mock.restore();
         mitm.disable();
         configMock.restore();
     })
