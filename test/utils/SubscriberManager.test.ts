@@ -110,8 +110,6 @@ describe("SubscriberManager", function () {
             const subMan = SubscriberManagerFactory.getSubscriberManager();
             await subMan.init();
             const cvarRequest: Promise<number> = subMan.requestCvarValue("dummy_cvar");
-            // https://www.chaijs.com/guide/styles/#should
-            chai.should();
 
             /*
              * SubscriberManager.begin() has to be called like this and cannot be called with an await or else you'll
