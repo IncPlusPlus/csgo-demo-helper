@@ -13,10 +13,10 @@ export class ShowHelpMessageWhenAsked implements ListenerService {
     }
 
     async handleLine(consoleLine: string): Promise<void> {
-        await ShowHelpMessageWhenAsked.ShowHelpMessageWhenAksed();
+        await ShowHelpMessageWhenAsked.ShowHelpMessageWhenAsked();
     }
 
-    private static ShowHelpMessageWhenAksed = async (): Promise<void> => {
+    private static ShowHelpMessageWhenAsked = async (): Promise<void> => {
         ConsoleHelper.printHelpMessage();
     }
 }
