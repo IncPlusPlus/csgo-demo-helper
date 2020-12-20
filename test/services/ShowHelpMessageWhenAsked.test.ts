@@ -1,16 +1,14 @@
-import * as mock from 'mock-fs';
+import {ImportMock, MockManager} from 'ts-mock-imports';
+import * as configModule from '../../src/utils/Config';
+import {Config} from '../../src/utils/Config';
 import {expect} from 'chai';
-import {join} from "path";
-import {stringify} from "ini";
 import {ShowHelpMessageWhenAsked} from "../../src/services/ShowHelpMessageWhenAsked";
 import {ConsoleHelper} from "../../src/utils/ConsoleHelper";
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
-import {SinonStub, stub} from "sinon";
-import {Config} from "../../src/utils/Config";
 import _ = require("mitm");
 
 describe("ShowHelpMessageWhenAsked", function () {
-    const config_directory: string = join(__dirname, "..", "..");
+    let configMock: MockManager<configModule.Config>;
     let config: { [p: string]: any } = {
         steam: {
             steam_web_api_key: 'XXXXXXXXXXXXXXXXXXXXXXX',
@@ -32,26 +30,19 @@ describe("ShowHelpMessageWhenAsked", function () {
             console_user_input_wait_time: 30,
         }
     };
-    let initStub: SinonStub;
 
-    before(function () {
-        initStub = stub(Config, '_initialize').callsFake(() => {
-            return false;
-        });
-        mock({
-            get [join(config_directory, "config.ini")]() {
-                return stringify(config);
-            },
-        });
+    beforeEach(function () {
+        configMock = ImportMock.mockClass(configModule, 'Config');
     });
 
-    after(function () {
-        mock.restore();
-        initStub.restore();
+    afterEach(function () {
+        configMock.restore();
     });
-
 
     it("shows the help message when 'dh help' is called", async function () {
+        //Uncomment this line to get logger output during this test
+        // LogHelper.configure(config)
+        configMock.mock('getConfig', config);
         let mitm = _();
         let messageLineIndex = 0;
         mitm.on("connection", function (s) {
@@ -69,5 +60,5 @@ describe("ShowHelpMessageWhenAsked", function () {
         await subMan.init();
         await subMan.begin();
         mitm.disable();
-    })
+    });
 });

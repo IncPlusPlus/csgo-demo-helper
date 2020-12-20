@@ -4,6 +4,7 @@ import {join} from "path";
 import {stringify} from "ini";
 import {existsSync, readFileSync} from "fs";
 import {Config} from "../../src/utils/Config";
+import {ConfigFactory} from "../../src/utils/ConfigFactory";
 
 describe("Config", function () {
     const config_directory: string = join(__dirname, "..", "..");
@@ -44,14 +45,21 @@ describe("Config", function () {
         });
     })
 
-    afterEach(mock.restore);
+    afterEach(function () {
+        mock.restore();
+        /*
+         * Clear the factory instance. These tests are meant to create a new instance of the Config class
+         * as they test parts of the Config constructor.
+         */
+        ConfigFactory.clear();
+    });
 
     it("should find config.ini", function () {
         //From the docs at https://www.chaijs.com/api/bdd/#throwerrorlike-errmsgmatcher-msg
         //"... when testing if a function named fn throws, provide fn instead of fn() as the target for the assertion."
-        expect(Config._initialize).to.not.throw();
+        expect(ConfigFactory.getConfigInstance).to.not.throw();
         //double-check that a value got loaded
-        expect(Config.getConfig().steam.steamID64).eq(config.steam.steamID64);
+        expect(ConfigFactory.getConfigInstance().getConfig().steam.steamID64).eq(config.steam.steamID64);
         //TODO: Perform a deep comparison to determine that the config file and config object above are exactly equal
     });
 
@@ -68,7 +76,7 @@ describe("Config", function () {
         });
         //config.ini shouldn't exist yet
         expect(existsSync(join(config_directory, "config.ini"))).eq(false);
-        expect(Config._initialize(true)).eq(false);
+        expect(() => ConfigFactory.getConfigInstance(true)).to.throw();
         //config.ini should have just been created
         expect(existsSync(join(config_directory, "config.ini"))).eq(true);
         //the newly created config.ini should have the exact same content as config.template.ini
@@ -79,19 +87,25 @@ describe("Config", function () {
     });
 
     it("should be undefined on invalid key access", function () {
-        expect(Config._initialize).to.not.throw();
-        expect(Config.getConfig().steam.dummy_key).to.eq(undefined);
+        expect(ConfigFactory.getConfigInstance).to.not.throw();
+        expect(ConfigFactory.getConfigInstance().getConfig().steam.dummy_key).to.eq(undefined);
     });
 
     it("should find csgo.exe when present", function () {
-        expect(Config.csgoExeExists()).eq(true);
+        expect(ConfigFactory.getConfigInstance().csgoExeExists()).eq(true);
     })
 
     it("should not find csgo.exe when absent", function () {
         mock({
+            get [join(config_directory, "config.ini")]() {
+                return stringify(config);
+            },
+            get [join(config_directory, "config.template.ini")]() {
+                return stringify(config);
+            },
             //create the directory that should contain csgo.exe as an empty directory. The exe shouldn't be found
             'C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive': {}
         })
-        expect(Config.csgoExeExists()).eq(false);
+        expect(ConfigFactory.getConfigInstance().csgoExeExists()).eq(false);
     })
 });

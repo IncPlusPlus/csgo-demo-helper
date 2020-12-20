@@ -1,13 +1,15 @@
+import {ImportMock, MockManager} from 'ts-mock-imports';
 import * as mock from 'mock-fs';
 import {join} from "path";
 import {stringify} from "ini";
+import * as configModule from "../../src/utils/Config";
 import {Config} from "../../src/utils/Config";
 import {SubscriberManager} from "../../src/utils/SubscriberManager";
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
-import {SinonStub, stub} from 'sinon';
 import _ = require("mitm");
 
 describe("SubscriberManager", function () {
+    let configMock: MockManager<configModule.Config>;
     let mitm = _();
     const config_directory: string = join(__dirname, "..", "..");
     let config: { [p: string]: any } = {
@@ -31,9 +33,9 @@ describe("SubscriberManager", function () {
             console_user_input_wait_time: 30,
         }
     }
-    let initStub: SinonStub;
 
     beforeEach(function () {
+        configMock = ImportMock.mockClass(configModule, 'Config');
         mock({
             get [join(config_directory, "config.ini")]() {
                 return stringify(config);
@@ -47,13 +49,13 @@ describe("SubscriberManager", function () {
             },
         });
         mitm = _();
-        initStub = stub(Config, 'getConfig').returns(config);
+        configMock.mock('getConfig', config);
     })
 
     afterEach(function () {
         mock.restore();
         mitm.disable();
-        initStub.restore();
+        configMock.restore();
     })
 
     it("can be initialized with mitm", async function () {
