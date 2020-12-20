@@ -8,6 +8,8 @@ import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory
 import _ = require("mitm");
 
 describe("ShowHelpMessageWhenAsked", function () {
+    let mitm = _();
+    mitm.disable();
     let configMock: MockManager<configModule.Config>;
     let config: { [p: string]: any } = {
         steam: {
@@ -33,17 +35,18 @@ describe("ShowHelpMessageWhenAsked", function () {
 
     beforeEach(function () {
         configMock = ImportMock.mockClass(configModule, 'Config');
+        mitm = _();
     });
 
     afterEach(function () {
         configMock.restore();
+        mitm.disable();
     });
 
     it("shows the help message when 'dh help' is called", async function () {
         //Uncomment this line to get logger output during this test
         // LogHelper.configure(config)
         configMock.mock('getConfig', config);
-        let mitm = _();
         let messageLineIndex = 0;
         mitm.on("connection", function (s) {
             s.on("data", function (data) {
@@ -59,6 +62,5 @@ describe("ShowHelpMessageWhenAsked", function () {
         subMan.subscribe(new ShowHelpMessageWhenAsked());
         await subMan.init();
         await subMan.begin();
-        mitm.disable();
     });
 });
