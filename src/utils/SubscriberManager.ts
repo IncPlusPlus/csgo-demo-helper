@@ -17,6 +17,10 @@ import pDefer = require('p-defer');
 const waitOn = require("wait-on");
 
 export class SubscriberManager {
+    /*
+     * Console output for checking the cvar game_mode looks like the following
+     * "game_mode" = "0" game client replicated                                         - The current game mode (based on game type). See GameModes.txt.
+     */
     private readonly cvarEchoRegExp: RegExp = RegExp('^\"([a-zA-Z_]+)\" = \"(\\d+)\".*');
     private readonly config: { [p: string]: any } = ConfigFactory.getConfigInstance().getConfig();
     private readonly port: number = this.config.csgo.netcon_port;
@@ -198,7 +202,7 @@ export class SubscriberManager {
         const deferred: pDefer.DeferredPromise<number> = pDefer();
         this.subscribedCvarValues.push([cvarName, deferred]);
         this.sendMessage(cvarName);
-        this.cvarSubscribersLog.debug(`Added '${cvarName}' to the cvar subscribers list.`)
+        this.cvarSubscribersLog.debug(`Added '${cvarName}' to the cvar subscribers list.`);
         return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
     }
 
@@ -206,13 +210,13 @@ export class SubscriberManager {
         const deferred: pDefer.DeferredPromise<string> = pDefer();
         this.specialOutputGrabbers.push([regex, deferred]);
         this.sendMessage(command);
-        this.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`)
+        this.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`);
         return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision);
     }
 
     public subscribe = (listener: ListenerService) => {
         this.subscribers.push(listener);
-        this.subscriberLog.debug(`Added callback '${listener}' to the subscribers list.`)
+        this.subscriberLog.debug(`Added callback '${listener}' to the subscribers list.`);
     }
 
     public unsubscribe = (listener: ListenerService) => {
