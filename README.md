@@ -45,8 +45,9 @@ You'll also need to [install Git](https://git-scm.com/downloads) if you intend t
 
 ## Installation
 
-This tool should work on any OS that CS:GO runs on. Installation is **_just three steps_**, but you will need to have a
-teensy bit of rudimentary knowledge on how to get around the command-line on your OS.
+This tool is only guaranteed to work on Windows so far (it looks for csgo._exe_). Installation is
+**_just three steps_**, but you will need to have a teensy bit of rudimentary knowledge on how to get around the
+command-line on your OS.
 
 1. Ensure Node.js and npm are installed by making sure a valid version number comes back by running `node -v`
    and `npm -v`. Most installs of Node.js come with npm. Installing npm is not covered by this guide. If your install of
