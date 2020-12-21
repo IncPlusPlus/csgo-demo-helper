@@ -12,7 +12,7 @@ const log = LogHelper.getLogger('Main');
 
 (async () => {
     try {
-        LogHelper.configure(ConfigFactory.getConfigInstance());
+        LogHelper.configure(ConfigFactory.getConfigInstance().getConfig());
     } catch (e) {
         console.log(e);
         console.log('Exited due to a fatal error. Please see above for details.');
