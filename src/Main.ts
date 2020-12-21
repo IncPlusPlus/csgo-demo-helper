@@ -11,7 +11,13 @@ import {ConfigFactory} from "./utils/ConfigFactory";
 const log = LogHelper.getLogger('Main');
 
 (async () => {
-    LogHelper.configure(ConfigFactory.getConfigInstance());
+    try {
+        LogHelper.configure(ConfigFactory.getConfigInstance());
+    } catch (e) {
+        console.log(e);
+        console.log('Exited due to a fatal error. Please see above for details.');
+        process.exit(1);
+    }
     const subscriberManager = SubscriberManagerFactory.getSubscriberManager();
     if (!ConfigFactory.getConfigInstance().csgoExeExists()) {
         log.fatal(`Couldn't find CS:GO's executable at the path '${join(ConfigFactory.getConfigInstance().getConfig().csgo.csgo_demos_folder, "..", "csgo.exe")}'.`);
