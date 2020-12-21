@@ -1,0 +1,11 @@
+# according to https://github.com/istanbuljs/istanbuljs/tree/master/packages/nyc-config-typescript
+extends: "@istanbuljs/nyc-config-typescript"
+
+reporter:
+  - html
+  - lcovonly
+  #  - clover
+  # those 2 are for commandline outputs
+  - text
+  - text-summary
+report-dir: coverage
