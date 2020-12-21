@@ -2,6 +2,7 @@ import {parse} from 'ini';
 import {constants, copyFileSync, existsSync, readFileSync} from 'fs';
 import {configure, getLogger} from 'log4js';
 import {join} from 'path';
+import {type} from "os";
 
 export class Config {
     private config: { [p: string]: any };
@@ -58,6 +59,20 @@ export class Config {
     }
 
     public csgoExeExists(): boolean {
-        return existsSync(join(this.config.csgo.csgo_demos_folder, "..", "csgo.exe"));
+        let csgo_executable_name;
+        switch (type()) {
+            case 'Windows_NT':
+                csgo_executable_name = 'csgo.exe';
+                break;
+            case 'Linux':
+                csgo_executable_name = 'csgo_linux64';
+                break
+            case 'Darwin':
+                csgo_executable_name = 'csgo_osx64';
+                break;
+            default:
+                throw Error(`UNSUPPORTED OS TYPE ${type()}`);
+        }
+        return existsSync(join(this.getConfig().csgo.csgo_demos_folder, "..", csgo_executable_name));
     }
 }
