@@ -76,7 +76,16 @@ Now we need to quickly configure a few quick things.
 1. Set the `netconport` launch option to whatever you have set in your `config.ini` for the `netcon_port` option. Your
    launch options should be set to "-netconport 2121" (without the quotes) if you intend to use port 2121 for this tool
    to communicate with the game.
-1. Set `steam_web_api_key` in your `config.ini
+1. Set `csgo_demos_folder` in `config.ini` to the directory that sits **_NEXT TO_** the CS:GO executable (csgo.exe) on
+   Windows. The usual location on a Windows computer was already set in the template that `config.ini` was created from.
+   If you know you installed your game to a different location or drive, set the correct location there. In case you
+   weren't sure where to find it, below are the normal default locations for your demos folder depending on your
+   operating system. Be sure to replace "YOUR_USERNAME" with your actual username.
+   1. Windows: `C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo`
+   1. Linux: `/home/YOUR_USERNAME/.steam/steam/steamapps/common/Counter-Strike Global Offensive/csgo`
+   1. Mac
+      OS: `/Users/YOUR_USERNAME/Library/Application Support/Steam/SteamApps/common/Counter-Strike Global Offensive/csgo`
+1. Set `steam_web_api_key` in your `config.ini`
    by [creating and getting a Steam Web API Key](https://steamcommunity.com/dev/apikey)
 1. Set `steamID64` in your `config.ini` by looking up your steam ID with [SteamID.io](https://steamid.io/) and copying
    the value called "steamID64". There should be a little red icon to the right which lets you copy it.
