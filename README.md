@@ -1,4 +1,6 @@
 # CS:GO Demo Helper
+[![codecov](https://codecov.io/gh/IncPlusPlus/csgo-demo-helper/branch/main/graph/badge.svg?token=A4WZAINZ1B)](https://codecov.io/gh/IncPlusPlus/csgo-demo-helper)
+![Build Status](https://github.com/IncPlusPlus/csgo-demo-helper/.github/workflows/codecov-test-suites.yml/badge.svg)
 
 This is a CLI tool that I use when I play Counter-Strike: Global Offensive. It has multiple features that help me record
 POV demos when I'm playing competitive matches. For information on what drove me to make this, see
