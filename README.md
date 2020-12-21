@@ -58,10 +58,10 @@ teensy bit of rudimentary knowledge on how to get around the command-line on you
    1. Install through NPM
       1. Run the command `npm i -g csgo-demo-helper`
       1. You're done! You can update the tool by running the command `npm update -g` but you'll only need to do that
-         when there is a new release. MAKE A BACKUP OF `config.ini` BEFORE YOU UPDATE AS IT WILL BE WIPED OUT!!!
+         when there is a new release. **_MAKE A BACKUP OF `config.ini` BEFORE YOU UPDATE AS IT WILL BE WIPED OUT ON EACH
+         UPDATE!!!_**
    1. Clone this repository using Git
       1. Run the command `git clone https://github.com/IncPlusPlus/csgo-demo-helper.git`.
-      1. Go into the newly-made "csgo-demo-helper" folder and run the command `npm i`
       1. You're done! It's just as simple but updates aren't guaranteed to be as smooth.
 1. Run CS:GO Demo Helper once. If you installed through NPM, you can just issue the command `csgo-demo-helper` in your
    command prompt. If you cloned the repository with Git, you can double-click `start.bat` in the "csgo-demo-helper"
