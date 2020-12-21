@@ -16,9 +16,13 @@ describe("Config", function () {
             csgo_executable_name = 'csgo.exe';
             break;
         case 'Linux':
-            csgo_demos_folder = 'unknown';
-            csgo_executable_name = 'csgo';
+            csgo_demos_folder = '/home/ryan/.steam/steam/steamapps/common/Counter-Strike Global Offensive/csgo';
+            csgo_executable_name = 'csgo_linux64';
             break
+        case 'Darwin':
+            csgo_demos_folder = '/Users/ryan/Library/Application Support/Steam/SteamApps/common/Counter-Strike Global Offensive/csgo';
+            csgo_executable_name = 'csgo_osx64';
+            break;
         default:
             throw Error(`UNSUPPORTED OS TYPE ${type()}`);
     }
@@ -53,9 +57,9 @@ describe("Config", function () {
             get [join(config_directory, "config.template.ini")]() {
                 return stringify(config);
             },
-            'C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive': {
+            get [join(csgo_demos_folder, "..", csgo_executable_name)]() {
                 //csgo.exe just needs to exist. We don't read the content so it's fine to just have placeholder content
-                'csgo.exe': Buffer.from([8, 6, 7, 5, 3, 0, 9]),
+                return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
             },
         });
     })
@@ -107,10 +111,8 @@ describe("Config", function () {
     });
 
     it("should find csgo.exe when present", function () {
-        //TODO: This test breaks on Linux lol. Fix it in a bit
-        this.skip();
         expect(ConfigFactory.getConfigInstance().csgoExeExists()).eq(true);
-    })
+    });
 
     it("should not find csgo.exe when absent", function () {
         mock({
@@ -121,8 +123,10 @@ describe("Config", function () {
                 return stringify(config);
             },
             //create the directory that should contain csgo.exe as an empty directory. The exe shouldn't be found
-            'C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive': {}
-        })
+            get [join(csgo_demos_folder, "..")]() {
+                return {};
+            },
+        });
         expect(ConfigFactory.getConfigInstance().csgoExeExists()).eq(false);
-    })
+    });
 });
