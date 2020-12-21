@@ -10,13 +10,21 @@ import {ConfigFactory} from "./utils/ConfigFactory";
 
 const log = LogHelper.getLogger('Main');
 
+const waitForUserInputThenExit = () => {
+    // https://stackoverflow.com/a/19692588/1687436
+    console.log('Press any key to exit');
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.on('data', process.exit.bind(process, 0));
+}
+
 (async () => {
     try {
         LogHelper.configure(ConfigFactory.getConfigInstance().getConfig());
     } catch (e) {
         console.log(e);
         console.log('Exited due to a fatal error. Please see above for details.');
-        process.exit(1);
+        waitForUserInputThenExit();
     }
     const subscriberManager = SubscriberManagerFactory.getSubscriberManager();
     if (!ConfigFactory.getConfigInstance().csgoExeExists()) {
@@ -33,4 +41,5 @@ const log = LogHelper.getLogger('Main');
 })().catch(reason => {
     log.fatal(reason);
     log.fatal('Exited due to a fatal error. Please see above for details.');
+    waitForUserInputThenExit();
 });
