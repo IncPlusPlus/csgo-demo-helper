@@ -11,7 +11,6 @@
     "prepublishOnly": "node node_modules/typescript/bin/tsc",
     "prestart": "npm i && echo \"Starting CS:GO Demo Helper\"",
     "start": "node node_modules/ts-node/dist/bin.js ./src/Main.ts",
-    "pretest": "node node_modules/typescript/bin/tsc",
     "test": "mocha --trace-warnings src test",
     "coverage": "nyc mocha src test"
   },
