@@ -121,7 +121,7 @@ export class DemoRecordingHelper implements ListenerService {
         const timeStamp = DemoNamingHelper.makeTimestamp();
         ConsoleHelper.padConsole(5);
         if (gameMode === 'competitive') {
-            if (ConfigFactory.getConfigInstance().getConfig().demo_naming_helper.explicitly_mark_competitive_demos === "1") {
+            if (Number(ConfigFactory.getConfigInstance().getConfig().demo_naming_helper.explicitly_mark_competitive_demos) === 1) {
                 demoName += `${gameMode}-`
             }
         } else {
@@ -160,7 +160,7 @@ export class DemoRecordingHelper implements ListenerService {
     private async applyRecordingPreferences(): Promise<string[]> {
         let thingsToPrintToConsole = [];
         DemoRecordingHelper.log.info("Applying recording preferences...");
-        if (ConfigFactory.getConfigInstance().getConfig().demo_recording_helper.record_my_voice_in_demos === "1") {
+        if (Number(ConfigFactory.getConfigInstance().getConfig().demo_recording_helper.record_my_voice_in_demos) === 1) {
             Cvars.setCvar('voice_loopback', "1");
             DemoRecordingHelper.log.info(`DemoHelper set voice_loopback 1.`);
         } else {
@@ -174,7 +174,7 @@ export class DemoRecordingHelper implements ListenerService {
             DemoRecordingHelper.log.error(e);
             throw e;
         }
-        if (ConfigFactory.getConfigInstance().getConfig().demo_recording_helper.mute_my_voice_while_recording === "1") {
+        if (Number(ConfigFactory.getConfigInstance().getConfig().demo_recording_helper.mute_my_voice_while_recording) === 1) {
             await VoicePlayerVolume.setVoicePlayerVolumeByName(myName, 0);
             thingsToPrintToConsole.push(`echo DemoHelper set the volume of player ${myName} to 0.`);
             DemoRecordingHelper.log.info(`DemoHelper set the volume of player ${myName} to 0.`);

@@ -46,7 +46,7 @@ export class DemoPlaybackHelper implements ListenerService {
     async handleLine(consoleLine: string): Promise<void> {
         if (await DemoPlaybackHelper.currentlyPlayingADemo()) {
             if (DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine)) {
-                if (ConfigFactory.getConfigInstance().getConfig().demo_playback_helper.playback_voice_player_volume === "1") {
+                if (Number(ConfigFactory.getConfigInstance().getConfig().demo_playback_helper.playback_voice_player_volume) === 1) {
                     const match = DemoPlaybackHelper.playerMutedByDemoHelperRegExp.exec(consoleLine);
                     const playerName = match![1];
                     //TODO: Additional testing required to make sure this doesn't fire before the game is ready to deal with it
