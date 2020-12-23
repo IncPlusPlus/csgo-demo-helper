@@ -107,13 +107,8 @@ export class SubscriberManager {
             let cvarName, cvarValue;
             if (lineIsACvarValue) {
                 const cvarOutput = this.cvarEchoRegExp.exec(line);
-                if (cvarOutput) {
-                    cvarName = cvarOutput[1];
-                    cvarValue = cvarOutput[2];
-                } else {
-                    this.cvarSubscribersLog.error(`Cvar RegEX matched output for a cvar but couldn't properly capture the content. Console output was '${line}'.`);
-                    continue;
-                }
+                cvarName = cvarOutput![1];
+                cvarValue = cvarOutput![2];
             }
             for (let i = 0; i < this.subscribedCvarValues.length; i++) {
                 if (this.subscribedCvarValues[i][0] === cvarName) {

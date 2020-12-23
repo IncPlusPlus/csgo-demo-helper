@@ -97,10 +97,7 @@ export class DemoRecordingHelper implements ListenerService {
         promptMessage = promptMessage.map(value => "echo \"" + value + "\"");
         const decisionLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue(promptMessage, DemoRecordingHelper.recordSplitOrNewDemoRegExp, true);
         const userDecision = DemoRecordingHelper.recordSplitOrNewDemoRegExp.exec(decisionLine);
-        if (!userDecision) {
-            throw Error('User response for whether to record new or split demo came back null!!!!')
-        }
-        switch (userDecision[1]) {
+        switch (userDecision![1]) {
             case 'new':
                 return `${demoName}-${highestDemoNumber + 1}`
             case 'split':
@@ -195,22 +192,20 @@ export class DemoRecordingHelper implements ListenerService {
         DemoRecordingHelper.log.info(`Attempting to start recording...`);
         const recordResultLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue(`record ${demoName}`, DemoRecordingHelper.resultOfRecordCmdRegExp, false);
         const match = DemoRecordingHelper.resultOfRecordCmdRegExp.exec(recordResultLine);
-        if (!match)
-            throw Error('The match for the expected result of running the record command came back null. What are you doing, man?');
-        if (match[1]) {
+        if (match![1]) {
             //Already recording
             SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Already recording a demo!!');
-        } else if (match[2]) {
+        } else if (match![2]) {
             //Recording properly started. All clear
             ConsoleHelper.padConsole(5);
             SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo DemoHelper started recording demo successfully!`);
-            DemoRecordingHelper.log.info(match[2]);
-            DemoRecordingHelper.log.info(`DemoHelper started recording demo '${match[3]}' successfully!`);
+            DemoRecordingHelper.log.info(match![2]);
+            DemoRecordingHelper.log.info(`DemoHelper started recording demo '${match![3]}' successfully!`);
             DemoRecordingHelper.currentlyRecording = true;
             ConsoleHelper.padConsole(5);
             SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo DemoHelper applied recording preferences and recorded a message in demo successfully!`);
             SubscriberManagerFactory.getSubscriberManager().sendMessage(thingsToPrintToConsole);
-        } else if (match[4]) {
+        } else if (match![4]) {
             //Please start demo recording after current round is over.
             // noinspection SpellCheckingInspection
             SubscriberManagerFactory.getSubscriberManager().sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);

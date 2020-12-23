@@ -48,9 +48,7 @@ export class DemoPlaybackHelper implements ListenerService {
             if (DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine)) {
                 if (ConfigFactory.getConfigInstance().getConfig().demo_playback_helper.playback_voice_player_volume === "1") {
                     const match = DemoPlaybackHelper.playerMutedByDemoHelperRegExp.exec(consoleLine);
-                    if (!match)
-                        throw Error('Got null match when determining player name from the message left behind in the demo.');
-                    const playerName = match[1];
+                    const playerName = match![1];
                     //TODO: Additional testing required to make sure this doesn't fire before the game is ready to deal with it
                     DemoPlaybackHelper.log.info(`DemoPlaybackHelper found a line indicating DemoHelper muted ${playerName} so it unmuted them.`);
                     await VoicePlayerVolume.setVoicePlayerVolumeByName(playerName, 1);
@@ -69,8 +67,6 @@ export class DemoPlaybackHelper implements ListenerService {
     private static getCurrentDemoName = async (): Promise<string> => {
         const consoleLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp, false);
         const match = DemoPlaybackHelper.demoInfoRegExp.exec(consoleLine);
-        if (!match)
-            throw Error(`Failed to execute RegExp on the console's response to demo_info.`);
-        return match[3] ? match[3] : '';
+        return match![3] ? match![3] : '';
     }
 }

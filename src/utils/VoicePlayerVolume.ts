@@ -56,18 +56,13 @@ class VoicePlayerVolumeListener implements ListenerService {
             this.reading = true;
         } else if (this.reading && VoicePlayerVolumeListener.voicePlayerVolumeRegExp.test(consoleLine)) {
             let playerInfo = VoicePlayerVolumeListener.voicePlayerVolumeRegExp.exec(consoleLine);
-            if (playerInfo) {
-                const playerVolume = {
-                    PlayerNumber: Number(playerInfo[1]),
-                    PlayerName: String(playerInfo[2].trim()),
-                    Volume: Number(playerInfo[3]),
-                };
-                if (this.reading) {
-                    this.players.push(playerVolume);
-                }
-            } else {
-                //Maybe throw error here
-                VoicePlayerVolumeListener.log.error('Failed to split output for player volume info using RegExp.exec()');
+            const playerVolume = {
+                PlayerNumber: Number(playerInfo![1]),
+                PlayerName: String(playerInfo![2].trim()),
+                Volume: Number(playerInfo![3]),
+            };
+            if (this.reading) {
+                this.players.push(playerVolume);
             }
         } else if (this.reading && VoicePlayerVolumeListener.paddingDashesRegExp.test(consoleLine)) {
             this.reading = false;
