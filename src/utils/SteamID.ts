@@ -12,8 +12,7 @@ export class SteamID {
     public async getPlayerProfileName(): Promise<string> {
         let playerName;
         try {
-            const response = await axios.get(`${this.GetPlayerSummariesV0002}?key=${(this.steamWebAPIKey)}&steamids=${(this.steamID64)}`)
-            // console.log(response.data.name);
+            const response = await axios.get(`${this.GetPlayerSummariesV0002}?key=${(this.steamWebAPIKey)}&steamids=${(this.steamID64)}`);
             playerName = response.data.response["players"][0]["personaname"];
         } catch (error) {
             this.log.error(error);

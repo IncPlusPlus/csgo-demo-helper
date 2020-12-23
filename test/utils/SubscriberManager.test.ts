@@ -3,12 +3,11 @@ import * as configModule from "../../src/utils/Config";
 import {Config} from "../../src/utils/Config";
 import {SubscriberManager} from "../../src/utils/SubscriberManager";
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
+import * as chaiAsPromised from 'chai-as-promised';
+import {expect, use} from 'chai';
 import _ = require("mitm");
-import chaiAsPromised = require('chai-as-promised');
 
-const chai = require('chai');
-chai.use(chaiAsPromised);
-const expect = chai.expect;
+use(chaiAsPromised);
 
 describe("SubscriberManager", function () {
     let configMock: MockManager<configModule.Config>;
