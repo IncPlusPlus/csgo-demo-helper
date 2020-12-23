@@ -133,7 +133,7 @@ export class SubscriberManager {
                      */
                     const subscriberCanHandleLine = this.subscribers[i].canHandle(line);
                     if (subscriberCanHandleLine) {
-                        this.subscriberLog.debug(`Selected listener '${this.subscribers[i]}' to handle line '${line}'.`);
+                        this.subscriberLog.debug(`Selected listener '${this.subscribers[i].name()}' to handle line '${line}'.`);
                         //We've found a suitable method to handle the message
                         try {
                             //Can't run 'await this.subscribers[i].handleLine(line);' because this would cause a deadlock
