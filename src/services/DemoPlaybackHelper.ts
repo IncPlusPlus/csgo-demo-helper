@@ -31,6 +31,14 @@ export class DemoPlaybackHelper implements ListenerService {
     }
 
     canHandle(consoleLine: string): boolean {
+        /*
+         * Ordinarily, we would just test whether the RegEx matched the line. However, we don't want to unmute the
+         * player if we're RECORDING a demo and just printed the line about muting them. We would only want to do that
+         * during demo PLAYBACK. To ensure this, DemoRecordingHelper keeps track of whether it's recording a demo or not.
+         *
+         * I *would* change this to use DemoPlaybackHelper.currentlyPlayingADemo() but canHandle() is not an async method
+         * and it becomes deadlock city if we try to convert canHandle into an async method.
+         */
         return !DemoRecordingHelper.synchronouslyCheckIfRecording() &&
             DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine);
     }
