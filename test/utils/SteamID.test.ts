@@ -84,18 +84,13 @@ describe("SteamID", function () {
     });
 
     describe("Specific error code responses", function () {
-        it("should throw an error when the status code is an error code", async function () {
-            // https://github.com/domenic/chai-as-promised/issues/42#issuecomment-43810026
-            should();
-            mockAdapter.onGet(fullUrl).reply(404);
-            await new SteamID().getPlayerProfileName().should.eventually.be.rejected.and.has.property('message', 'Request failed with status code 404');
-        });
-
-        it("should throw an error when the status code is an error code", async function () {
-            // https://github.com/domenic/chai-as-promised/issues/42#issuecomment-43810026
-            should();
-            mockAdapter.onGet(fullUrl).reply(403);
-            await new SteamID().getPlayerProfileName().should.eventually.be.rejected.and.has.property('message', 'Request failed with status code 403');
-        });
+        for (let i = 403; i < 405; i++) {
+            it(`should throw an error when the response status is ${i}`, async function () {
+                // https://github.com/domenic/chai-as-promised/issues/42#issuecomment-43810026
+                should();
+                mockAdapter.onGet(fullUrl).reply(i);
+                await new SteamID().getPlayerProfileName().should.eventually.be.rejected.and.has.property('message', `Request failed with status code ${i}`);
+            });
+        }
     });
 });
