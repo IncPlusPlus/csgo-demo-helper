@@ -5,7 +5,7 @@ import {ImportMock, MockManager} from "ts-mock-imports";
 import {SteamID} from "../../src/utils/SteamID";
 import MockAdapter from 'axios-mock-adapter';
 import * as chaiAsPromised from 'chai-as-promised';
-import {expect, use} from 'chai';
+import {expect, should, use} from 'chai';
 
 use(chaiAsPromised);
 
@@ -76,8 +76,26 @@ describe("SteamID", function () {
         return expect(new SteamID().getPlayerProfileName()).to.be.eventually.eq(playerName);
     });
 
-    it("should throw an error when the response is not 200", function () {
-        mockAdapter.onGet(fullUrl).reply(429, "Too Many Requests");
-        return expect(new SteamID().getPlayerProfileName()).to.be.eventually.rejected;
+    it("should throw an error when the response does not contain a name", async function () {
+        // https://github.com/domenic/chai-as-promised/issues/42#issuecomment-43810026
+        should();
+        mockAdapter.onGet(fullUrl).reply(200);
+        await new SteamID().getPlayerProfileName().should.eventually.be.rejectedWith(RegExp(".*Cannot read property '.*' of undefined"));
+    });
+
+    describe("Specific error code responses", function () {
+        it("should throw an error when the status code is an error code", async function () {
+            // https://github.com/domenic/chai-as-promised/issues/42#issuecomment-43810026
+            should();
+            mockAdapter.onGet(fullUrl).reply(404);
+            await new SteamID().getPlayerProfileName().should.eventually.be.rejected.and.has.property('message', 'Request failed with status code 404');
+        });
+
+        it("should throw an error when the status code is an error code", async function () {
+            // https://github.com/domenic/chai-as-promised/issues/42#issuecomment-43810026
+            should();
+            mockAdapter.onGet(fullUrl).reply(403);
+            await new SteamID().getPlayerProfileName().should.eventually.be.rejected.and.has.property('message', 'Request failed with status code 403');
+        });
     });
 });
