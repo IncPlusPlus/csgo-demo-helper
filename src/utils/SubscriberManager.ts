@@ -29,23 +29,15 @@ export class SubscriberManager {
     private readonly cvarSubscribersLog = LogHelper.getLogger('SubscriberManager.cvarSubscribers');
     private readonly valueListenersLog = LogHelper.getLogger('SubscriberManager.valueListeners');
 
-//For use with functions that are expecting the game not to be open yet
+    private initialized = false;
+    private alive: boolean | undefined = undefined;
+
     private readonly waitOnOpts = {
         resources: [
             `tcp:${this.port}`,
         ],
         interval: 100, // poll interval in ms, default 250ms
         timeout: 90000, // timeout in ms, default Infinity
-        // tcpTimeout: 1000, // tcp timeout in ms, default 300ms
-        window: 500, // stabilization time in ms, default 750ms
-    };
-//For use with all other functions
-    private readonly waitOnOptsImpatient = {
-        resources: [
-            `tcp:${this.port}`,
-        ],
-        interval: 50, // poll interval in ms, default 250ms
-        timeout: 1000, // timeout in ms, default Infinity
         // tcpTimeout: 1000, // tcp timeout in ms, default 300ms
         window: 500, // stabilization time in ms, default 750ms
     };
@@ -67,7 +59,7 @@ export class SubscriberManager {
         this.log.info('Starting up...');
         this.log.debug(`Waiting to connect to CS:GO's netcon on port ${this.port}.`);
         try {
-            await this.patientlyWaitForConsoleSocket();
+            await this.waitForConsoleSocket();
         } catch (e) {
             throw e;
         }
@@ -79,12 +71,18 @@ export class SubscriberManager {
             crlfDelay: Infinity
         });
         this.log.info('Ready!');
+        this.initialized = true;
     }
 
     public begin = async (): Promise<void> => {
-        if (this.reader === undefined) {
-            throw new Error(`Someone tried to start SubscriberManager without calling init first!`);
+        if (this.alive !== undefined) {
+            if (this.alive) {
+                throw Error('Tried to call begin() again on an already active instance of SubscriberManager.');
+            } else if (!this.alive) {
+                throw new Error(`Tried to call begin() when this SubscriberManager was already dead.`);
+            }
         }
+        this.alive = true;
         for await (const rawLine of this.reader as ReadLine) {
             const line = rawLine.trimEnd();
             let lineHandledBySpecialOutputGrabber: boolean = false;
@@ -147,28 +145,15 @@ export class SubscriberManager {
                 }
             }
         }
+        this.alive = false;
     }
 
-    public patientlyWaitForConsoleSocket = async () => {
-        try {
-            await this.waitForConsoleSocket(true);
-        } catch (e) {
-            throw e;
-        }
-    }
-
-    public waitForConsoleSocket = async (patient: boolean) => {
+    public waitForConsoleSocket = async () => {
         const requestId = v4();
         try {
-            if (patient) {
-                this.log.debug(`(Request ID ${requestId}) Waiting on TCP port ${this.port} for ${this.waitOnOpts.timeout / 1000} seconds.`)
-                await waitOn(this.waitOnOpts);
-                this.log.debug(`(Request ID ${requestId}) Done waiting!`)
-            } else {
-                this.log.debug(`(Request ID ${requestId}) Waiting on TCP port ${this.port} for ${this.waitOnOptsImpatient.timeout / 1000} seconds.`)
-                await waitOn(this.waitOnOptsImpatient);
-                this.log.debug(`(Request ID ${requestId}) Done waiting!`)
-            }
+            this.log.debug(`(Request ID ${requestId}) Waiting on TCP port ${this.port} for ${this.waitOnOpts.timeout / 1000} seconds.`);
+            await waitOn(this.waitOnOpts);
+            this.log.debug(`(Request ID ${requestId}) Done waiting!`);
         } catch (err) {
             this.log.error(err);
             this.log.error('Encountered an error when waiting for the console socket to open.');
@@ -177,19 +162,42 @@ export class SubscriberManager {
     }
 
     /**
+     * @returns whether this instance has had init() called on it
+     */
+    public isInitialized = (): boolean => {
+        return this.initialized;
+    }
+
+    /**
+     * Determines whether this instance is alive or not. You should always check isInitialized() first.
+     * isAlive() will return false if init() hasn't been called and this would mean that this instance ISN'T DEAD
+     * but simply has not been initialized yet.
+     *
+     * @returns whether this instance is still alive or not (has an open socket and is still running the the big for loop)
+     * If still running, this will be true. If not started yet, undefined will be returned. If the loop has since stopped,
+     * false will be returned.
+     */
+    public isAlive = (): boolean | undefined => {
+        return this.alive;
+    }
+
+    /**
      * Write one or many commands to the console.
      * @param commandOrArray a single string or an array of strings to be written to the console
      */
     public sendMessage = (commandOrArray: string | string[]) => {
+        if (!this.socket?.writable) {
+            throw new Error(`Tried to write to a socket that wasn't writable!`);
+        }
         if (Array.isArray(commandOrArray)) {
             for (let command of commandOrArray) {
                 this.log.debug(`Writing to CStrike console: '${command}'`);
-                this.socket?.write(`${command}\n`);
+                this.socket.write(`${command}\n`);
             }
             //TODO: Research if there's a better way to use varargs in TypeScript :)
         } else {
             this.log.debug(`Writing to CStrike console: '${commandOrArray}'`);
-            this.socket?.write(`${commandOrArray}\n`);
+            this.socket.write(`${commandOrArray}\n`);
         }
     }
 

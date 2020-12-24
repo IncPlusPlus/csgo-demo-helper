@@ -4,7 +4,7 @@ export class SubscriberManagerFactory {
     private static subscriberManager: SubscriberManager | undefined;
 
     public static getSubscriberManager(): SubscriberManager {
-        if (!SubscriberManagerFactory.subscriberManager) {
+        if (!SubscriberManagerFactory.subscriberManager || !SubscriberManagerFactory.subscriberManager.isAlive()) {
             SubscriberManagerFactory.subscriberManager = new SubscriberManager();
         }
         return SubscriberManagerFactory.subscriberManager;
