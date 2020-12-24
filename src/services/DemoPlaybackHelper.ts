@@ -45,16 +45,14 @@ export class DemoPlaybackHelper implements ListenerService {
 
     async handleLine(consoleLine: string): Promise<void> {
         if (await DemoPlaybackHelper.currentlyPlayingADemo()) {
-            if (DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine)) {
-                if (Number(ConfigFactory.getConfigInstance().getConfig().demo_playback_helper.playback_voice_player_volume) === 1) {
-                    const match = DemoPlaybackHelper.playerMutedByDemoHelperRegExp.exec(consoleLine);
-                    const playerName = match![1];
-                    //TODO: Additional testing required to make sure this doesn't fire before the game is ready to deal with it
-                    DemoPlaybackHelper.log.info(`DemoPlaybackHelper found a line indicating DemoHelper muted ${playerName} so it unmuted them.`);
-                    await VoicePlayerVolume.setVoicePlayerVolumeByName(playerName, 1);
-                } else {
-                    DemoPlaybackHelper.log.info("DemoPlaybackHelper found a line indicating DemoHelper muted a player but demo_playback_helper.playback_voice_player_volume was set to 0 in the config file.");
-                }
+            if (Number(ConfigFactory.getConfigInstance().getConfig().demo_playback_helper.playback_voice_player_volume) === 1) {
+                const match = DemoPlaybackHelper.playerMutedByDemoHelperRegExp.exec(consoleLine);
+                const playerName = match![1];
+                //TODO: Additional testing required to make sure this doesn't fire before the game is ready to deal with it
+                DemoPlaybackHelper.log.info(`DemoPlaybackHelper found a line indicating DemoHelper muted ${playerName} so it unmuted them.`);
+                await VoicePlayerVolume.setVoicePlayerVolumeByName(playerName, 1);
+            } else {
+                DemoPlaybackHelper.log.info("DemoPlaybackHelper found a line indicating DemoHelper muted a player but demo_playback_helper.playback_voice_player_volume was set to 0 in the config file.");
             }
         }
     }
