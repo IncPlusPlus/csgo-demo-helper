@@ -66,7 +66,9 @@ export class DemoPlaybackHelper implements ListenerService {
 
     private static getCurrentDemoName = async (): Promise<string> => {
         const consoleLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp, false);
+        // Capture group 1 is the error message, group 2 is the other message, and group 3 is the demo name if the other message is received (meaning: playback is occurring).
         const match = DemoPlaybackHelper.demoInfoRegExp.exec(consoleLine);
+        // If the demo name exists, return it. If we're not playing a demo, return an empty string.
         return match![3] ? match![3] : '';
     }
 }
