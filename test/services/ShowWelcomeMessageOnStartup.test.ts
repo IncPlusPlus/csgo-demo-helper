@@ -2,13 +2,12 @@ import {ImportMock, MockManager} from 'ts-mock-imports';
 import * as configModule from '../../src/utils/Config';
 import {Config} from '../../src/utils/Config';
 import {expect} from 'chai';
-import {ShowHelpMessageWhenAsked} from "../../src/services/ShowHelpMessageWhenAsked";
 import {ConsoleHelper} from "../../src/utils/ConsoleHelper";
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
 import {ShowWelcomeMessageOnStartup} from "../../src/services/ShowWelcomeMessageOnStartup";
 import _ = require("mitm");
 
-describe("ShowHelpMessageWhenAsked", function () {
+describe("ShowWelcomeMessageOnStartup", function () {
     let mitm = _();
     mitm.disable();
     let configMock: MockManager<configModule.Config>;

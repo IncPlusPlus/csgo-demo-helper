@@ -2,7 +2,6 @@ import {ImportMock, MockManager} from 'ts-mock-imports';
 import * as configModule from '../../src/utils/Config';
 import {Config} from '../../src/utils/Config';
 import {expect} from 'chai';
-import {ShowHelpMessageWhenAsked} from "../../src/services/ShowHelpMessageWhenAsked";
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
 import {DemoPlaybackHelper} from "../../src/services/DemoPlaybackHelper";
 import {createSandbox} from 'sinon';
@@ -10,7 +9,7 @@ import {SubscriberManager} from '../../src/utils/SubscriberManager';
 import {VoicePlayerVolume} from "../../src/utils/VoicePlayerVolume";
 import _ = require("mitm");
 
-describe("ShowHelpMessageWhenAsked", function () {
+describe("DemoPlaybackHelper", function () {
     let subMan: SubscriberManager;
     let mitm = _();
     mitm.disable();
