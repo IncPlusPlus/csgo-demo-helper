@@ -33,7 +33,7 @@ export class DemoRecordingHelper implements ListenerService {
     private static readonly log = LogHelper.getLogger('DemoRecordingHelper');
     private static readonly demoRecordingEndRegExp = RegExp('^Completed demo, recording time \\d+\\.\\d+, game frames \\d+\\.$');
     //TODO: Allow user to input command like "dh rec new" to skip the prompt since they'd know if this is a new game or whether they rejoined an existing one
-    private static readonly beginRecordingCommand = 'dh rec';
+    static readonly BeginRecordingCommand = 'dh rec';
     private static readonly recordSplitOrNewDemoRegExp = RegExp('^dh (new|split|cancel)$');
     private static readonly resultOfRecordCmdRegExp = RegExp('(Already recording\\.)|(Recording to (.*)\\.dem\\.\\.\\.)|(Please start demo recording after current round is over\\.)');
     private static readonly beginRecordingAfterNewRoundRegExp = RegExp('dh roundover|0:\\s+Reinitialized \\d+ predictable entities');
@@ -45,18 +45,19 @@ export class DemoRecordingHelper implements ListenerService {
     }
 
     canHandle(consoleLine: string): boolean {
-        return consoleLine === DemoRecordingHelper.beginRecordingCommand || DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine);
+        return consoleLine === DemoRecordingHelper.BeginRecordingCommand || DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine);
     }
 
     async handleLine(consoleLine: string): Promise<void> {
-        if (consoleLine === DemoRecordingHelper.beginRecordingCommand) {
+        if (consoleLine === DemoRecordingHelper.BeginRecordingCommand) {
             try {
                 await this.handleStartRecord();
             } catch (e) {
                 //It's okay to throw errors in this method because it's an expectation that SubscriberManager knows what to do.
                 throw e;
             }
-        } else if (DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine)) {
+            // The only other possible condition is DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine) being true.
+        } else {
             DemoRecordingHelper.currentlyRecording = false;
             DemoRecordingHelper.log.info(consoleLine);
         }
@@ -135,7 +136,7 @@ export class DemoRecordingHelper implements ListenerService {
                 demoName = await this.promptUserForNewOrSplitDemo(demoName, DemoRecordingHelper.mostRecentDemoInfoToString(demoName, existingDemoInfo), existingDemoInfo);
             } catch (e) {
                 const t = e as UserDecisionTimeoutException;
-                if (t && t.taskName) {
+                if (t?.taskName) {
                     ConsoleHelper.padConsole(5);
                     SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo \"Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...\"`)
                     ConsoleHelper.padConsole(5);
@@ -154,6 +155,7 @@ export class DemoRecordingHelper implements ListenerService {
                 return;
             }
         }
+        // Maybe check before and after this.attemptStartRecording() to make sure a new .dem file is created.
         await this.attemptStartRecording(demoName);
     }
 
