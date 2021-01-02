@@ -36,8 +36,8 @@ const waitForUserInputThenExit = () => {
     subscriberManager.subscribe(new ShowHelpMessageWhenAsked());
     subscriberManager.subscribe(new DemoRecordingHelper());
     subscriberManager.subscribe(new DemoPlaybackHelper());
-    await subscriberManager.init()
-    subscriberManager.begin().then();
+    await subscriberManager.init();
+    await subscriberManager.begin();
 })().catch(reason => {
     log.fatal(reason);
     log.fatal('Exited due to a fatal error. Please see above for details.');
