@@ -7,8 +7,8 @@
  */
 
 import {Cvars} from "./Cvars";
-import {SubscriberManager} from "./SubscriberManager";
 import {LogHelper} from "./LogHelper";
+import {SubscriberManagerFactory} from "./SubscriberManagerFactory";
 
 export class DemoNamingHelper {
     /*
@@ -47,18 +47,13 @@ export class DemoNamingHelper {
     }
 
     public static getMapName = async (excludePrefix: boolean): Promise<string> => {
-        const mapLine = await SubscriberManager.searchForValue('status', DemoNamingHelper.mapFromStatusRegExp, false);
+        const mapLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('status', DemoNamingHelper.mapFromStatusRegExp, false);
         const mapName = DemoNamingHelper.mapFromStatusRegExp.exec(mapLine);
-        if (mapName) {
-            if (excludePrefix) {
-                //Attempt to remove the first underscore in the map name and everything before it
-                return mapName[1].substr(mapName[1].indexOf('_') + 1);
-            } else {
-                return mapName[1];
-            }
+        if (excludePrefix) {
+            //Attempt to remove the first underscore in the map name and everything before it
+            return mapName![1].substr(mapName![1].indexOf('_') + 1);
         } else {
-            DemoNamingHelper.log.error('Failed to match regex when looking for map name.');
-            return 'UNKNOWN';
+            return mapName![1];
         }
     }
 }

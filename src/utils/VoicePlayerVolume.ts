@@ -1,6 +1,7 @@
 import pDefer = require("p-defer");
 import {LogHelper} from "./LogHelper";
-import {SubscriberManager} from "./SubscriberManager";
+import {ListenerService} from "../ListenerService";
+import {SubscriberManagerFactory} from "./SubscriberManagerFactory";
 
 export class VoicePlayerVolume {
     private static readonly log = LogHelper.getLogger('VoicePlayerVolume');
@@ -16,15 +17,15 @@ export class VoicePlayerVolume {
     }
 
     public static setVoicePlayerVolume = (playerNumber: number, volume: number) => {
-        SubscriberManager.sendMessage(`voice_player_volume ${playerNumber} ${volume}`);
+        SubscriberManagerFactory.getSubscriberManager().sendMessage(`voice_player_volume ${playerNumber} ${volume}`);
     }
 
     public static getVoicePlayerVolumeValues = async (): Promise<{ Volume: number; PlayerName: string; PlayerNumber: number }[]> => {
         const deferred: pDefer.DeferredPromise<{ Volume: number; PlayerName: string; PlayerNumber: number }[]> = pDefer();
         const listener = new VoicePlayerVolumeListener(deferred);
-        SubscriberManager.subscribe(listener);
-        SubscriberManager.sendMessage('voice_player_volume');
-        deferred.promise.then(() => SubscriberManager.unsubscribe(listener));
+        SubscriberManagerFactory.getSubscriberManager().subscribe(listener);
+        SubscriberManagerFactory.getSubscriberManager().sendMessage('voice_player_volume');
+        deferred.promise.then(() => SubscriberManagerFactory.getSubscriberManager().unsubscribe(listener));
         return deferred.promise;
     }
 }
@@ -55,18 +56,13 @@ class VoicePlayerVolumeListener implements ListenerService {
             this.reading = true;
         } else if (this.reading && VoicePlayerVolumeListener.voicePlayerVolumeRegExp.test(consoleLine)) {
             let playerInfo = VoicePlayerVolumeListener.voicePlayerVolumeRegExp.exec(consoleLine);
-            if (playerInfo) {
-                const playerVolume = {
-                    PlayerNumber: Number(playerInfo[1]),
-                    PlayerName: String(playerInfo[2].trim()),
-                    Volume: Number(playerInfo[3]),
-                };
-                if (this.reading) {
-                    this.players.push(playerVolume);
-                }
-            } else {
-                //Maybe throw error here
-                VoicePlayerVolumeListener.log.error('Failed to split output for player volume info using RegExp.exec()');
+            const playerVolume = {
+                PlayerNumber: Number(playerInfo![1]),
+                PlayerName: String(playerInfo![2].trim()),
+                Volume: Number(playerInfo![3]),
+            };
+            if (this.reading) {
+                this.players.push(playerVolume);
             }
         } else if (this.reading && VoicePlayerVolumeListener.paddingDashesRegExp.test(consoleLine)) {
             this.reading = false;

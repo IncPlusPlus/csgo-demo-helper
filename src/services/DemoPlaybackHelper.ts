@@ -6,11 +6,12 @@
  * notice yourself talking during demo playback but don't hear any audio.
  */
 
-import {Config} from "../utils/Config";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {LogHelper} from "../utils/LogHelper";
-import {SubscriberManager} from "../utils/SubscriberManager";
 import {DemoRecordingHelper} from "./DemoRecordingHelper";
+import {ListenerService} from "../ListenerService";
+import {SubscriberManagerFactory} from "../utils/SubscriberManagerFactory";
+import {ConfigFactory} from "../utils/ConfigFactory";
 
 /**
  * DemoPlaybackHelper is responsible for listening to the console for messages left behind by DemoRecordingHelper.
@@ -30,24 +31,28 @@ export class DemoPlaybackHelper implements ListenerService {
     }
 
     canHandle(consoleLine: string): boolean {
+        /*
+         * Ordinarily, we would just test whether the RegEx matched the line. However, we don't want to unmute the
+         * player if we're RECORDING a demo and just printed the line about muting them. We would only want to do that
+         * during demo PLAYBACK. To ensure this, DemoRecordingHelper keeps track of whether it's recording a demo or not.
+         *
+         * I *would* change this to use DemoPlaybackHelper.currentlyPlayingADemo() but canHandle() is not an async method
+         * and it becomes deadlock city if we try to convert canHandle into an async method.
+         */
         return !DemoRecordingHelper.synchronouslyCheckIfRecording() &&
             DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine);
     }
 
     async handleLine(consoleLine: string): Promise<void> {
         if (await DemoPlaybackHelper.currentlyPlayingADemo()) {
-            if (DemoPlaybackHelper.playerMutedByDemoHelperRegExp.test(consoleLine)) {
-                if (Config.getConfig().demo_playback_helper.playback_voice_player_volume === "1") {
-                    const match = DemoPlaybackHelper.playerMutedByDemoHelperRegExp.exec(consoleLine);
-                    if (!match)
-                        throw Error('Got null match when determining player name from the message left behind in the demo.');
-                    const playerName = match[1];
-                    //TODO: Additional testing required to make sure this doesn't fire before the game is ready to deal with it
-                    DemoPlaybackHelper.log.info(`DemoPlaybackHelper found a line indicating DemoHelper muted ${playerName} so it unmuted them.`);
-                    await VoicePlayerVolume.setVoicePlayerVolumeByName(playerName, 1);
-                } else {
-                    DemoPlaybackHelper.log.info("DemoPlaybackHelper found a line indicating DemoHelper muted a player but demo_playback_helper.playback_voice_player_volume was set to 0 in the config file.");
-                }
+            if (Number(ConfigFactory.getConfigInstance().getConfig().demo_playback_helper.playback_voice_player_volume) === 1) {
+                const match = DemoPlaybackHelper.playerMutedByDemoHelperRegExp.exec(consoleLine);
+                const playerName = match![1];
+                //TODO: Additional testing required to make sure this doesn't fire before the game is ready to deal with it
+                DemoPlaybackHelper.log.info(`DemoPlaybackHelper found a line indicating DemoHelper muted ${playerName} so it unmuted them.`);
+                await VoicePlayerVolume.setVoicePlayerVolumeByName(playerName, 1);
+            } else {
+                DemoPlaybackHelper.log.info("DemoPlaybackHelper found a line indicating DemoHelper muted a player but demo_playback_helper.playback_voice_player_volume was set to 0 in the config file.");
             }
         }
     }
@@ -58,10 +63,10 @@ export class DemoPlaybackHelper implements ListenerService {
     }
 
     private static getCurrentDemoName = async (): Promise<string> => {
-        const consoleLine = await SubscriberManager.searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp, false);
+        const consoleLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('demo_info', DemoPlaybackHelper.demoInfoRegExp, false);
+        // Capture group 1 is the error message, group 2 is the other message, and group 3 is the demo name if the other message is received (meaning: playback is occurring).
         const match = DemoPlaybackHelper.demoInfoRegExp.exec(consoleLine);
-        if (!match)
-            throw Error(`Failed to execute RegExp on the console's response to demo_info.`);
-        return match[3] ? match[3] : '';
+        // If the demo name exists, return it. If we're not playing a demo, return an empty string.
+        return match![3] ? match![3] : '';
     }
 }

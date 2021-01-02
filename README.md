@@ -1,4 +1,6 @@
 # CS:GO Demo Helper
+[![codecov](https://codecov.io/gh/IncPlusPlus/csgo-demo-helper/branch/main/graph/badge.svg?token=A4WZAINZ1B)](https://codecov.io/gh/IncPlusPlus/csgo-demo-helper)
+![Build Status](https://github.com/IncPlusPlus/csgo-demo-helper/.github/workflows/codecov-test-suites.yml/badge.svg)
 
 This is a CLI tool that I use when I play Counter-Strike: Global Offensive. It has multiple features that help me record
 POV demos when I'm playing competitive matches. For information on what drove me to make this, see
@@ -56,10 +58,10 @@ teensy bit of rudimentary knowledge on how to get around the command-line on you
    1. Install through NPM
       1. Run the command `npm i -g csgo-demo-helper`
       1. You're done! You can update the tool by running the command `npm update -g` but you'll only need to do that
-         when there is a new release. MAKE A BACKUP OF `config.ini` BEFORE YOU UPDATE AS IT WILL BE WIPED OUT!!!
+         when there is a new release. **_MAKE A BACKUP OF `config.ini` BEFORE YOU UPDATE AS IT WILL BE WIPED OUT ON EACH
+         UPDATE!!!_**
    1. Clone this repository using Git
       1. Run the command `git clone https://github.com/IncPlusPlus/csgo-demo-helper.git`.
-      1. Go into the newly-made "csgo-demo-helper" folder and run the command `npm i`
       1. You're done! It's just as simple but updates aren't guaranteed to be as smooth.
 1. Run CS:GO Demo Helper once. If you installed through NPM, you can just issue the command `csgo-demo-helper` in your
    command prompt. If you cloned the repository with Git, you can double-click `start.bat` in the "csgo-demo-helper"
@@ -74,7 +76,16 @@ Now we need to quickly configure a few quick things.
 1. Set the `netconport` launch option to whatever you have set in your `config.ini` for the `netcon_port` option. Your
    launch options should be set to "-netconport 2121" (without the quotes) if you intend to use port 2121 for this tool
    to communicate with the game.
-1. Set `steam_web_api_key` in your `config.ini
+1. Set `csgo_demos_folder` in `config.ini` to the directory that sits **_NEXT TO_** the CS:GO executable (csgo.exe) on
+   Windows. The usual location on a Windows computer was already set in the template that `config.ini` was created from.
+   If you know you installed your game to a different location or drive, set the correct location there. In case you
+   weren't sure where to find it, below are the normal default locations for your demos folder depending on your
+   operating system. Be sure to replace "YOUR_USERNAME" with your actual username.
+   1. Windows: `C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\csgo`
+   1. Linux: `/home/YOUR_USERNAME/.steam/steam/steamapps/common/Counter-Strike Global Offensive/csgo`
+   1. Mac
+      OS: `/Users/YOUR_USERNAME/Library/Application Support/Steam/SteamApps/common/Counter-Strike Global Offensive/csgo`
+1. Set `steam_web_api_key` in your `config.ini`
    by [creating and getting a Steam Web API Key](https://steamcommunity.com/dev/apikey)
 1. Set `steamID64` in your `config.ini` by looking up your steam ID with [SteamID.io](https://steamid.io/) and copying
    the value called "steamID64". There should be a little red icon to the right which lets you copy it.

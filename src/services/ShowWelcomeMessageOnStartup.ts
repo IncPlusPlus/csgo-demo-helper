@@ -1,14 +1,16 @@
 import {ConsoleHelper} from "../utils/ConsoleHelper";
+import {ListenerService} from "../ListenerService";
 
-const csgoStartupFinishedString = 'ChangeGameUIState: CSGO_GAME_UI_STATE_INTROMOVIE -> CSGO_GAME_UI_STATE_MAINMENU';
 
 export class ShowWelcomeMessageOnStartup implements ListenerService {
+    public static readonly CsgoStartupFinishedString = 'ChangeGameUIState: CSGO_GAME_UI_STATE_INTROMOVIE -> CSGO_GAME_UI_STATE_MAINMENU';
+
     name(): string {
         return ShowWelcomeMessageOnStartup.name;
     }
 
     canHandle(consoleLine: string): boolean {
-        return consoleLine === csgoStartupFinishedString;
+        return consoleLine === ShowWelcomeMessageOnStartup.CsgoStartupFinishedString;
     }
 
     async handleLine(consoleLine: string): Promise<void> {

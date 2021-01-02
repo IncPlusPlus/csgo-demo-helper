@@ -9,19 +9,19 @@
  * "game_mode" = "1" ( def. "0" ) game client replicated                            - The current game mode (based on game type). See GameModes.txt.
  */
 
-import {SubscriberManager} from './SubscriberManager';
 import {LogHelper} from "./LogHelper";
+import {SubscriberManagerFactory} from "./SubscriberManagerFactory";
 
 export class Cvars {
     private static readonly log = LogHelper.getLogger('Cvars');
 
     public static getCvar = async (cvarName: string): Promise<number> => {
         Cvars.log.debug(`Retrieving value of cvar '${cvarName}'...`);
-        return await SubscriberManager.requestCvarValue(cvarName);
+        return await SubscriberManagerFactory.getSubscriberManager().requestCvarValue(cvarName);
     }
 
     public static setCvar = (cvarName: string, value: string) => {
-        SubscriberManager.sendMessage(`${cvarName} ${value}`);
+        SubscriberManagerFactory.getSubscriberManager().sendMessage(`${cvarName} ${value}`);
         Cvars.log.debug(`Set value of cvar '${cvarName}' to '${value}'.`);
     }
 }

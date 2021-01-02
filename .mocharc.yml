@@ -1,0 +1,14 @@
+# mocha settings
+require:
+  - ts-node/register
+  - source-map-support/register
+recursive: true
+color: true
+exit: true
+extension:
+  - ts
+  - test.ts
+ignore:
+  # this is so that mocha doesn't auto execute Main.ts
+  - "**/src/Main.ts"
+#  - "**/test/*.ts"
