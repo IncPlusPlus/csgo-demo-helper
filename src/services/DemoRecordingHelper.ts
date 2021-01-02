@@ -56,6 +56,7 @@ export class DemoRecordingHelper implements ListenerService {
                 //It's okay to throw errors in this method because it's an expectation that SubscriberManager knows what to do.
                 // throw e;
                 DemoRecordingHelper.log.error(e);
+                SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Failed to start recording. Check the log file for details.');
             }
             // The only other possible condition is DemoRecordingHelper.demoRecordingEndRegExp.test(consoleLine) being true.
         } else {
