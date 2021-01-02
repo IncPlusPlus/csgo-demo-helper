@@ -5,11 +5,11 @@ import {join} from 'path';
 import {type} from "os";
 
 export class Config {
-    private config: { [p: string]: any };
+    private readonly config: { [p: string]: any };
     private config_path: string = join(__dirname, "..", "..", "config.ini");
     private config_template_path: string = join(__dirname, "..", "..", "config.template.ini");
 
-    constructor(inTest = false) {
+    constructor() {
         if (!this.configExists()) {
             // noinspection SpellCheckingInspection
             configure({
@@ -17,7 +17,7 @@ export class Config {
                     out: {type: 'stdout'},
                     app: {type: 'file', filename: 'application.log'}
                 },
-                categories: {default: {appenders: ['out', 'app'], level: `${inTest ? 'OFF' : 'info'}`}}
+                categories: {default: {appenders: ['out', 'app'], level: `info`}}
             });
             const log = getLogger('Config');
             log.fatal(`Couldn't find 'config.ini' expected at path '${this.config_path}'.`);
@@ -28,33 +28,21 @@ export class Config {
             throw Error(`config.ini not found at path '${this.config_path}'`);
         }
         this.config = parse(readFileSync(this.config_path, 'utf-8'));
-        if (!this.configValid()) {
-            //TODO: Check that all settings used by CS:GO Demo Manager are present and valid
-        }
-    }
-
-    /**
-     * DO NOT CALL THIS METHOD EVER. THIS IS FOR INTERNAL USE INSIDE Config.ts ONLY!!!!!
-     * @param inTest set this to true to avoid log output during tests
-     * @returns false if config.ini didn't exist and had to be created; true if read successfully
-     */
-    _initialize(inTest = false): boolean {
-        return false;
+        // if (!this.configValid()) {
+        //     //TODO: Check that all settings used by CS:GO Demo Manager are present and valid
+        // }
     }
 
     configExists(): boolean {
         return existsSync(this.config_path);
     }
 
-    configValid(): boolean {
-        //TODO: Implement
-        return true;
-    }
+    //TODO: Implement
+    // configValid(): boolean {
+    //     return true;
+    // }
 
     public getConfig = (): { [p: string]: any } => {
-        if (!this.config) {
-            this._initialize();
-        }
         return this.config;
     }
 

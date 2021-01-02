@@ -95,7 +95,7 @@ describe("Config", function () {
         });
         //config.ini shouldn't exist yet
         expect(existsSync(join(config_directory, "config.ini"))).eq(false);
-        expect(() => ConfigFactory.getConfigInstance(true)).to.throw();
+        expect(() => ConfigFactory.getConfigInstance()).to.throw();
         //config.ini should have just been created
         expect(existsSync(join(config_directory, "config.ini"))).eq(true);
         //the newly created config.ini should have the exact same content as config.template.ini

@@ -3,9 +3,9 @@ import {Config} from "./Config";
 export class ConfigFactory {
     private static Config: Config | undefined;
 
-    public static getConfigInstance(inTest = false): Config {
+    public static getConfigInstance(): Config {
         if (!ConfigFactory.Config) {
-            ConfigFactory.Config = new Config(inTest);
+            ConfigFactory.Config = new Config();
         }
         return ConfigFactory.Config;
     }
