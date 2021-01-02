@@ -47,7 +47,7 @@ export class DemoNamingHelper {
     }
 
     public static getMapName = async (excludePrefix: boolean): Promise<string> => {
-        const mapLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('status', DemoNamingHelper.mapFromStatusRegExp, false);
+        const mapLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue('status', DemoNamingHelper.mapFromStatusRegExp, false, 'to get the current map the player is on');
         const mapName = DemoNamingHelper.mapFromStatusRegExp.exec(mapLine);
         if (excludePrefix) {
             //Attempt to remove the first underscore in the map name and everything before it

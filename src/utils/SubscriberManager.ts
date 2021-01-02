@@ -209,12 +209,12 @@ export class SubscriberManager {
         return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
     }
 
-    public searchForValue = (command: string | string[], regex: RegExp, isUserDecision: boolean) => {
+    public searchForValue = (command: string | string[], regex: RegExp, isUserDecision: boolean, additionalDetailsAboutRequest?: string) => {
         const deferred: pDefer.DeferredPromise<string> = pDefer();
         this.specialOutputGrabbers.push([regex, deferred]);
         this.sendMessage(command);
         this.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`);
-        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision);
+        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision, additionalDetailsAboutRequest);
     }
 
     public subscribe = (listener: ListenerService) => {
