@@ -139,10 +139,15 @@ export class SubscriberManager {
                         //We've found a suitable method to handle the message
                         try {
                             //Can't run 'await this.subscribers[i].handleLine(line);' because this would cause a deadlock
-                            this.subscribers[i].handleLine(line).then(() => this.subscriberLog.debug(`Listener '${this.subscribers[i]}' finished handling line '${line}'.`));
+                            this.subscribers[i].handleLine(line)
+                                .then(() => this.subscriberLog.debug(
+                                    `Listener '${this.subscribers[i]}' finished handling line '${line}'.`)
+                                ).catch(reason => {
+                                this.logListenerError(this.subscribers[i], line, reason);
+                            });
                         } catch (e) {
-                            this.subscriberLog.error(`Listener '${this.subscribers[i]}' encountered an error handling line '${line}'.`);
-                            this.subscriberLog.error(e);
+                            this.logListenerError(this.subscribers[i], line, e);
+                            this.subscriberLog.error(`Additionally, this error was thrown in a non-async manner. Instead of taking the form of a rejected promise, this error was received because it was thrown from handleLine of ${this.subscribers[i]}. Please try to avoid this in the future.`);
                         }
                         break;
                     }
@@ -222,6 +227,7 @@ export class SubscriberManager {
     }
 
     public subscribe = (listener: ListenerService) => {
+        //TODO: Maybe prevent adding duplicate listeners
         this.subscribers.push(listener);
         this.subscriberLog.debug(`Added callback '${listener}' to the subscribers list.`);
     }
@@ -233,6 +239,11 @@ export class SubscriberManager {
         } else {
             this.subscriberLog.warn(`Attempted to unsubscribe callback function '${listener}' but failed.`);
         }
+    }
+
+    private logListenerError = (listener: ListenerService, consoleLineBeingHandled: string, reason: any) => {
+        this.subscriberLog.error(`Listener '${listener}' encountered an error handling line '${consoleLineBeingHandled}'.`);
+        this.subscriberLog.error(reason);
     }
 
     //Maybe I'll implement these in the future if necessary
