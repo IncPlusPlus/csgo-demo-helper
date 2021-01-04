@@ -5,11 +5,22 @@ import {stringify} from "ini";
 import {existsSync, readFileSync} from "fs";
 import {Config} from "../../src/utils/Config";
 import {ConfigFactory} from "../../src/utils/ConfigFactory";
+import * as os from "os";
 import {type} from "os";
+import {createSandbox} from 'sinon';
+import * as log4js from "log4js";
 
 describe("Config", function () {
+    const sandbox = createSandbox();
     let csgo_demos_folder = '';
     let csgo_executable_name = '';
+    const listOfOperatingSystems = ['Windows_NT', 'Linux', 'Darwin', 'Solaris'];
+    const namesOfCsgoExeByOS = ['csgo.exe', 'csgo_linux64', 'csgo_osx64', 'SHOULDN\'T NEED TO USE THIS NAME'];
+    /*
+     * The switch statement that assigns these variables does so to ensure the proper paths are used that are compatible
+     * with the given OS running the test. I know it's not ideal because it runs the risk of overlooking, say, a bug
+     * that would happen on Windows because the test runner is on Linux but it's the best I can do for now.
+     */
     switch (type()) {
         case 'Windows_NT':
             csgo_demos_folder = 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Counter-Strike Global Offensive\\csgo';
@@ -50,6 +61,9 @@ describe("Config", function () {
     }
 
     beforeEach(function () {
+        // This prevents the logger from being enabled in the constructor of the Config class.
+        // Without this, all tests after the logger is configured will end up spitting out all sorts of garbage we don't need.
+        sandbox.stub(log4js, "configure");
         mock({
             get [join(config_directory, "config.ini")]() {
                 return stringify(config);
@@ -71,6 +85,7 @@ describe("Config", function () {
          * as they test parts of the Config constructor.
          */
         ConfigFactory.clear();
+        sandbox.restore();
     });
 
     it("should find config.ini", function () {
@@ -129,4 +144,17 @@ describe("Config", function () {
         });
         expect(ConfigFactory.getConfigInstance().csgoExeExists()).eq(false);
     });
+
+    for (let i = 0; i < listOfOperatingSystems.length; i++) {
+        it(`should find the correct csgo executable on ${listOfOperatingSystems[i]}`, function () {
+            sandbox.stub(os, "type").returns(listOfOperatingSystems[i]);
+            const configInstance = ConfigFactory.getConfigInstance();
+            // If we're on the last iteration, we're testing that an unsupported OS throws an error
+            if (i === listOfOperatingSystems.length - 1) {
+                expect(configInstance.csgoExeNameForPlatform).to.throw();
+            } else {
+                expect(configInstance.csgoExeNameForPlatform()).eq(namesOfCsgoExeByOS[i]);
+            }
+        });
+    }
 });

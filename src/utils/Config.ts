@@ -46,21 +46,20 @@ export class Config {
         return this.config;
     }
 
-    public csgoExeExists(): boolean {
-        let csgo_executable_name;
+    public csgoExeNameForPlatform = (): string => {
         switch (type()) {
             case 'Windows_NT':
-                csgo_executable_name = 'csgo.exe';
-                break;
+                return 'csgo.exe';
             case 'Linux':
-                csgo_executable_name = 'csgo_linux64';
-                break
+                return 'csgo_linux64';
             case 'Darwin':
-                csgo_executable_name = 'csgo_osx64';
-                break;
+                return 'csgo_osx64';
             default:
                 throw Error(`UNSUPPORTED OS TYPE ${type()}`);
         }
-        return existsSync(join(this.getConfig().csgo.csgo_demos_folder, "..", csgo_executable_name));
+    }
+
+    public csgoExeExists(): boolean {
+        return existsSync(join(this.getConfig().csgo.csgo_demos_folder, "..", this.csgoExeNameForPlatform()));
     }
 }

@@ -12,6 +12,7 @@ import {TimeoutPromise} from "./TimeoutPromise";
 import {ListenerService} from "../ListenerService";
 import {Pair} from './Pair';
 import {ConfigFactory} from "./ConfigFactory";
+import {WaitOnOptions} from "wait-on";
 import pDefer = require('p-defer');
 
 const waitOn = require("wait-on");
@@ -32,7 +33,7 @@ export class SubscriberManager {
     private initialized = false;
     private alive: boolean | undefined = undefined;
 
-    private readonly waitOnOpts = {
+    private readonly waitOnOpts: WaitOnOptions = {
         resources: [
             `tcp:${this.port}`,
         ],
@@ -75,10 +76,13 @@ export class SubscriberManager {
     }
 
     public begin = async (): Promise<void> => {
+        // When this.alive IS SET TO undefined, it means this instance is unused.
         if (this.alive !== undefined) {
+            // If this instance is still alive
             if (this.alive) {
                 throw Error('Tried to call begin() again on an already active instance of SubscriberManager.');
-            } else if (!this.alive) {
+            } else {
+                // Otherwise, this.alive is false and this SubscriberManager has already been used and closed
                 throw new Error(`Tried to call begin() when this SubscriberManager was already dead.`);
             }
         }
@@ -135,10 +139,15 @@ export class SubscriberManager {
                         //We've found a suitable method to handle the message
                         try {
                             //Can't run 'await this.subscribers[i].handleLine(line);' because this would cause a deadlock
-                            this.subscribers[i].handleLine(line).then(() => this.subscriberLog.debug(`Listener '${this.subscribers[i]}' finished handling line '${line}'.`));
+                            this.subscribers[i].handleLine(line)
+                                .then(() => this.subscriberLog.debug(
+                                    `Listener '${this.subscribers[i]}' finished handling line '${line}'.`)
+                                ).catch(reason => {
+                                this.logListenerError(this.subscribers[i], line, reason);
+                            });
                         } catch (e) {
-                            this.subscriberLog.error(`Listener '${this.subscribers[i]}' encountered an error handling line '${line}'.`);
-                            this.subscriberLog.error(e);
+                            this.logListenerError(this.subscribers[i], line, e);
+                            this.subscriberLog.error(`Additionally, this error was thrown in a non-async manner. Instead of taking the form of a rejected promise, this error was received because it was thrown from handleLine of ${this.subscribers[i]}. Please try to avoid this in the future.`);
                         }
                         break;
                     }
@@ -151,7 +160,7 @@ export class SubscriberManager {
     public waitForConsoleSocket = async () => {
         const requestId = v4();
         try {
-            this.log.debug(`(Request ID ${requestId}) Waiting on TCP port ${this.port} for ${this.waitOnOpts.timeout / 1000} seconds.`);
+            this.log.debug(`(Request ID ${requestId}) Waiting on TCP port ${this.port} for ${this.waitOnOpts.timeout! / 1000} seconds.`);
             await waitOn(this.waitOnOpts);
             this.log.debug(`(Request ID ${requestId}) Done waiting!`);
         } catch (err) {
@@ -186,18 +195,18 @@ export class SubscriberManager {
      * @param commandOrArray a single string or an array of strings to be written to the console
      */
     public sendMessage = (commandOrArray: string | string[]) => {
-        if (!this.socket?.writable) {
+        if (!this.socket!.writable) {
             throw new Error(`Tried to write to a socket that wasn't writable!`);
         }
         if (Array.isArray(commandOrArray)) {
             for (let command of commandOrArray) {
                 this.log.debug(`Writing to CStrike console: '${command}'`);
-                this.socket.write(`${command}\n`);
+                this.socket!.write(`${command}\n`);
             }
             //TODO: Research if there's a better way to use varargs in TypeScript :)
         } else {
             this.log.debug(`Writing to CStrike console: '${commandOrArray}'`);
-            this.socket.write(`${commandOrArray}\n`);
+            this.socket!.write(`${commandOrArray}\n`);
         }
     }
 
@@ -218,6 +227,7 @@ export class SubscriberManager {
     }
 
     public subscribe = (listener: ListenerService) => {
+        //TODO: Maybe prevent adding duplicate listeners
         this.subscribers.push(listener);
         this.subscriberLog.debug(`Added callback '${listener}' to the subscribers list.`);
     }
@@ -229,6 +239,11 @@ export class SubscriberManager {
         } else {
             this.subscriberLog.warn(`Attempted to unsubscribe callback function '${listener}' but failed.`);
         }
+    }
+
+    private logListenerError = (listener: ListenerService, consoleLineBeingHandled: string, reason: any) => {
+        this.subscriberLog.error(`Listener '${listener}' encountered an error handling line '${consoleLineBeingHandled}'.`);
+        this.subscriberLog.error(reason);
     }
 
     //Maybe I'll implement these in the future if necessary
