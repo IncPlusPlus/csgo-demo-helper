@@ -8,9 +8,11 @@ import {createSandbox} from 'sinon';
 import {SubscriberManager} from '../../src/utils/SubscriberManager';
 import {DemoRecordingHelper} from "../../src/services/DemoRecordingHelper";
 import {VoicePlayerVolume} from "../../src/utils/VoicePlayerVolume";
+import {DemoNamingHelper} from "../../src/utils/DemoNamingHelper";
 import _ = require("mitm");
 
 describe("DemoRecordingHelper", function () {
+    const sandbox = createSandbox();
     let subMan: SubscriberManager;
     let mitm = _();
     mitm.disable();
@@ -94,6 +96,7 @@ netcon  :  172.30.160.1:2121
         configMock.mock('getConfig', config);
         steamIDMock = ImportMock.mockClass(steamIDModule, 'SteamID');
         steamIDMock.mock('getPlayerProfileName', 'The Lovely Potato');
+        sandbox.stub(DemoNamingHelper, "makeTimestamp").returns("1-1-2021");
         mitm = _();
         subMan = SubscriberManagerFactory.getSubscriberManager();
     });
@@ -103,6 +106,7 @@ netcon  :  172.30.160.1:2121
         steamIDMock.restore();
         mitm.disable();
         SubscriberManagerFactory.clear();
+        sandbox.restore();
     });
 
     describe("The basics", function () {
@@ -120,8 +124,6 @@ netcon  :  172.30.160.1:2121
         });
 
         it(`All defaults. New demo and no others exist at the moment. Demo recording begins successfully`, async function () {
-            // TODO: This test fails on the GH workflow for whatever reason. Disabling it for now
-            this.skip();
             let recording = false;
             let preRecordingIndex = 0;
             let postRecordingIndex = 0;
