@@ -4,7 +4,7 @@ import {Config} from "../../src/utils/Config";
 import {SubscriberManager} from "../../src/utils/SubscriberManager";
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
 import * as chaiAsPromised from 'chai-as-promised';
-import {expect, use} from 'chai';
+import {expect, should, use} from 'chai';
 import _ = require("mitm");
 
 use(chaiAsPromised);
@@ -51,12 +51,23 @@ describe("SubscriberManager", function () {
         SubscriberManagerFactory.clear();
     });
 
-    describe("Basic functionality", function () {
+    describe("init() and begin() tests", function () {
         it("can be initialized with mitm", async function () {
             mitm.on("connection", function (s) {
                 s.end();
             });
             await SubscriberManagerFactory.getSubscriberManager().init();
+        });
+
+        it("fails to initialize if the console socket has an error", async function () {
+            const errMsg = "Socket killed immediately upon connection!";
+            should();
+            mitm.on("connection", function (s) {
+                s.emit("error", Error(errMsg));
+                s.destroy();
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init().should.eventually.be.rejectedWith(errMsg);
         });
 
         it("returns from begin() when socket closes", async function () {
@@ -65,6 +76,51 @@ describe("SubscriberManager", function () {
             });
             const subMan = SubscriberManagerFactory.getSubscriberManager();
             await subMan.init();
+            await subMan.begin();
+        });
+
+        it("can't send a message when the socket isn't writable", async function () {
+            mitm.on("connection", function (s) {
+                s.end();
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init();
+            await subMan.begin();
+            return expect(() => subMan.sendMessage("echo")).to.throw();
+        });
+
+        it("can't re-use a dead SubscriberManager", async function () {
+            mitm.on("connection", function (s) {
+                s.end();
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init();
+            await subMan.begin();
+            return expect(subMan.begin()).to.eventually.be.rejectedWith('Tried to call begin() when this SubscriberManager was already dead.');
+        });
+
+        it("begin() can't be called twice", async function () {
+            mitm.on("connection", function (s) {
+                setTimeout(() => {
+                    s.end();
+                }, 500);
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init();
+            // Please turn a blind eye to this hackiness. It's merely to simulate the incorrect usage of the begin method
+            subMan.begin();
+            return expect(subMan.begin()).to.be.rejectedWith('Tried to call begin() again on an already active instance of SubscriberManager.');
+        });
+
+        it("properly updates isInitialized()", async function () {
+            should();
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            subMan.isInitialized().should.eq(false);
+            mitm.on("connection", function (s) {
+                s.end();
+            });
+            await subMan.init();
+            subMan.isInitialized().should.eq(true);
             await subMan.begin();
         });
     });
