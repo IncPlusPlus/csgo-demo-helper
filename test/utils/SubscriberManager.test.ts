@@ -308,11 +308,12 @@ describe("SubscriberManager", function () {
                 }
 
                 canHandle(consoleLine: string): boolean {
-                    return false;
+                    return true;
                 }
 
-                handleLine(consoleLine: string): Promise<void> {
-                    return new Promise<void>(resolve => resolve());
+                async handleLine(consoleLine: string): Promise<void> {
+
+                    await SubscriberManagerFactory.getSubscriberManager().sendMessage('Time to unsubscribe me!');
                 }
             };
 
@@ -323,20 +324,27 @@ describe("SubscriberManager", function () {
              * 0. Ensure that canHandle hasn't been magically called on either listener before we've even done anything
              * 1. Subscribe both permanent and temporary listeners
              * 2. Send a console line to SubscriberManager
-             * 3. Assert that canHandle has now been called once on both listeners (neither true so both of them must have been asked)
+             * 3. Assert that canHandle has now been called once on both listeners (only the temporary one returns true and because it is added as the second subscriber, the permanent listener will always be asked first)
              * 4. Remove the temporary listener
              * 5. Send another console line
              * 6. Ensure that the temporary listener was truly removed by asserting that its canHandle method is still at just 1 call while the permanent listener is now at 2 calls.
              */
             const subMan = SubscriberManagerFactory.getSubscriberManager();
-            // Step 1
+            // Step 1 (adding the permanent first instead of the temporary is important because the temp will accept requests
             subMan.subscribe(permanentListener);
             subMan.subscribe(temporaryListener);
 
             mitm.on("connection", function (s) {
                 // Step 2
                 s.write('"dummy_cvar" = "2"\n');
-                setTimeout(() => {
+                /*
+                 * This is a hacky way of making mitm wait before unsubscribing the temporary listener. We won't know
+                 * whether canHandle has been called on both the listeners. A way around this is to allow the temporary
+                 * listener's canHandle method to return true and have the handleLine method send data through the socket.
+                 * It is upon receiving this data that we know for sure that both the permanent and temporary listeners
+                 * have been polled ONCE so far about whether they can respond to the provided line.
+                 */
+                s.on("data", function () {
                     // Step 3
                     expect(permanentCanHandle.callCount).eq(1);
                     expect(temporaryCanHandle.callCount).eq(1);
@@ -345,15 +353,14 @@ describe("SubscriberManager", function () {
                     // Step 5
                     s.write('"yet_another_dummy_cvar" = "100"\n');
                     s.end();
-                }, 500);
+                });
             });
 
             await subMan.init();
             // Step 0
             expect(permanentCanHandle.callCount).eq(0);
             expect(temporaryCanHandle.callCount).eq(0);
-            // The await here is important because logErrorStub.callCount will only be updated for sure after begin() has exited
-            await expect(subMan.begin()).to.eventually.not.be.rejected;
+            await subMan.begin();
             // Step 6
             expect(permanentCanHandle.callCount).eq(2);
             expect(temporaryCanHandle.callCount).eq(1);
