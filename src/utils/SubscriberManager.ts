@@ -141,7 +141,7 @@ export class SubscriberManager {
                             //Can't run 'await this.subscribers[i].handleLine(line);' because this would cause a deadlock
                             this.subscribers[i].handleLine(line)
                                 .then(() => this.subscriberLog.debug(
-                                    `Listener '${this.subscribers[i]}' finished handling line '${line}'.`)
+                                    `Listener '${this.subscribers[i].name()}' finished handling line '${line}'.`)
                                 ).catch(reason => {
                                 this.logListenerError(this.subscribers[i], line, reason);
                             });
@@ -229,7 +229,7 @@ export class SubscriberManager {
     public subscribe = (listener: ListenerService) => {
         //TODO: Maybe prevent adding duplicate listeners
         this.subscribers.push(listener);
-        this.subscriberLog.debug(`Added callback '${listener}' to the subscribers list.`);
+        this.subscriberLog.debug(`Added callback '${listener.name()}' to the subscribers list.`);
     }
 
     public unsubscribe = (listener: ListenerService) => {
@@ -237,12 +237,12 @@ export class SubscriberManager {
         if (index > -1) {
             this.subscribers.splice(index, 1);
         } else {
-            this.subscriberLog.warn(`Attempted to unsubscribe callback function '${listener}' but failed.`);
+            this.subscriberLog.warn(`Attempted to unsubscribe callback function '${listener.name()}' but failed.`);
         }
     }
 
     private logListenerError = (listener: ListenerService, consoleLineBeingHandled: string, reason: any) => {
-        this.subscriberLog.error(`Listener '${listener}' encountered an error handling line '${consoleLineBeingHandled}'.`);
+        this.subscriberLog.error(`Listener '${listener.name()}' encountered an error handling line '${consoleLineBeingHandled}'.`);
         this.subscriberLog.error(reason);
     }
 
