@@ -45,8 +45,6 @@ describe("SubscriberManager", function () {
         configMock = ImportMock.mockClass(configModule, 'Config');
         mitm = _();
         configMock.mock('getConfig', config);
-
-
     });
 
     afterEach(function () {
@@ -275,6 +273,33 @@ describe("SubscriberManager", function () {
                 await subMan.init();
                 await subMan.begin();
                 expect(logTraceStub.callCount).eq(1);
+            });
+
+            it("a warning is issued when unsubscribing a listener that doesn't exist", async function () {
+                //Uncomment this line to get logger output during this test
+                // LogHelper.configure(config)
+
+                const subMan = SubscriberManagerFactory.getSubscriberManager();
+
+                const logWarnStub = sandbox.spy(subscribersLogger, "warn");
+                expect(logWarnStub.callCount).eq(0);
+
+                // Unsubscribe a listener that wasn't subscribed originally
+                subMan.unsubscribe(new class implements ListenerService {
+                    name(): string {
+                        return "Dummy Listener Service";
+                    }
+
+                    canHandle(consoleLine: string): boolean {
+                        return false;
+                    }
+
+                    handleLine(consoleLine: string): Promise<void> {
+                        return new Promise((resolve, reject) => reject());
+                    }
+                });
+
+                expect(logWarnStub.callCount).eq(1);
             });
         });
 
