@@ -15,16 +15,12 @@ export class TimeoutPromise {
      */
     public timeoutPromise = <T>(promise: Promise<T>, descriptiveTaskName: string, isUserDecision: boolean, additionalDetailsAboutRequest?: string): Promise<T> => {
         // Create the error here to not mess up the stacktrace
-        let err = Error(`${descriptiveTaskName} timed out in ${this.consolePromiseTimeoutMs}ms.${additionalDetailsAboutRequest ? ` The purpose of this request was ${additionalDetailsAboutRequest}.` : ''}`);
+        let err = Error(`${descriptiveTaskName} timed out in ${this.consolePromiseTimeoutMs}ms${isUserDecision ? ' while waiting for user input' : ''}.${additionalDetailsAboutRequest ? ` The purpose of this request was ${additionalDetailsAboutRequest}.` : ''}`);
         // Create a promise that rejects in <ms> milliseconds
         let timeout = new Promise<T>((resolve, reject) => {
             let id = setTimeout(() => {
                 clearTimeout(id);
-                if (isUserDecision) {
-                    reject(new UserDecisionTimeoutException(descriptiveTaskName, this.consoleUserInputPromiseTimeoutMs));
-                } else {
-                    reject(err);
-                }
+                reject(err);
             }, isUserDecision ? this.consoleUserInputPromiseTimeoutMs : this.consolePromiseTimeoutMs);
         })
 
@@ -33,15 +29,5 @@ export class TimeoutPromise {
             promise,
             timeout
         ]);
-    }
-}
-
-export class UserDecisionTimeoutException {
-    public readonly taskName: string;
-    public readonly timeOut: number;
-
-    constructor(taskName: string, timeOut: number) {
-        this.taskName = taskName;
-        this.timeOut = timeOut;
     }
 }

@@ -23,7 +23,6 @@ import {SteamID} from "../utils/SteamID";
 import {LogHelper} from "../utils/LogHelper";
 import {VoicePlayerVolume} from "../utils/VoicePlayerVolume";
 import {Cvars} from "../utils/Cvars";
-import {UserDecisionTimeoutException} from "../utils/TimeoutPromise";
 import {ListenerService} from "../ListenerService";
 import {Pair} from "../utils/Pair";
 import {SubscriberManagerFactory} from "../utils/SubscriberManagerFactory";
@@ -137,12 +136,11 @@ export class DemoRecordingHelper implements ListenerService {
             try {
                 demoName = await this.promptUserForNewOrSplitDemo(demoName, DemoRecordingHelper.mostRecentDemoInfoToString(demoName, existingDemoInfo), existingDemoInfo);
             } catch (e) {
-                const t = e as UserDecisionTimeoutException;
-                if (t?.taskName) {
+                if (RegExp('.*user decision.*').test(e)) {
                     ConsoleHelper.padConsole(5);
-                    SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo \"Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...\"`)
+                    SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo \"Timed out waiting for user to respond to the demo splitting prompt. Cancelling...\"`)
                     ConsoleHelper.padConsole(5);
-                    DemoRecordingHelper.log.warn(`Timed out waiting ${t.timeOut / 1000}s for user to respond to the demo splitting prompt. Cancelling...`)
+                    DemoRecordingHelper.log.warn(`Timed out waiting for user to respond to the demo splitting prompt. Cancelling...`)
                     demoName = '';
                 } else {
                     DemoRecordingHelper.log.warn('Encountered an error when prompting the user whether to split or make a new demo.');
@@ -153,7 +151,7 @@ export class DemoRecordingHelper implements ListenerService {
             if (!demoName) {
                 //User cancelled the request to record a demo
                 SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Cancelling');
-                DemoRecordingHelper.log.debug('User cancelled when prompted whether to split or make a new demo.');
+                DemoRecordingHelper.log.debug('User cancelled or waited too long when prompted whether to split or make a new demo.');
                 return;
             }
         }
