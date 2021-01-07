@@ -215,7 +215,7 @@ export class SubscriberManager {
         this.subscribedCvarValues.push([cvarName, deferred]);
         this.sendMessage(cvarName);
         this.cvarSubscribersLog.debug(`Added '${cvarName}' to the cvar subscribers list.`);
-        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
+        return new TimeoutPromise(this.config).timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
     }
 
     public searchForValue = (command: string | string[], regex: RegExp, isUserDecision: boolean, additionalDetailsAboutRequest?: string) => {
@@ -223,7 +223,7 @@ export class SubscriberManager {
         this.specialOutputGrabbers.push([regex, deferred]);
         this.sendMessage(command);
         this.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`);
-        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision, additionalDetailsAboutRequest);
+        return new TimeoutPromise(this.config).timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision, additionalDetailsAboutRequest);
     }
 
     public subscribe = (listener: ListenerService) => {

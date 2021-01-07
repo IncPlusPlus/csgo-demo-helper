@@ -1,9 +1,12 @@
-import {ConfigFactory} from "./ConfigFactory";
-
 export class TimeoutPromise {
-    private readonly config: { [p: string]: any } = ConfigFactory.getConfigInstance().getConfig();
-    private readonly consolePromiseTimeoutMs: number = this.config.internals.console_output_promise_wait_time * 1000;
-    private readonly consoleUserInputPromiseTimeoutMs: number = this.config.internals.console_user_input_wait_time * 1000;
+    // private readonly config: { [p: string]: any } = ConfigFactory.getConfigInstance().getConfig();
+    private readonly consolePromiseTimeoutMs: number;
+    private readonly consoleUserInputPromiseTimeoutMs: number;
+
+    constructor(config: { [p: string]: any }) {
+        this.consolePromiseTimeoutMs = config.internals.console_output_promise_wait_time * 1000;
+        this.consoleUserInputPromiseTimeoutMs = config.internals.console_user_input_wait_time * 1000;
+    }
 
     /**
      * @see https://italonascimento.github.io/applying-a-timeout-to-your-promises/
