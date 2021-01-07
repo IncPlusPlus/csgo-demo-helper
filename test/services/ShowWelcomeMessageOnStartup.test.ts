@@ -35,6 +35,7 @@ describe("ShowWelcomeMessageOnStartup", function () {
 
     beforeEach(function () {
         configMock = ImportMock.mockClass(configModule, 'Config');
+        configMock.mock('getConfig', config);
         mitm = _();
     });
 
@@ -46,7 +47,6 @@ describe("ShowWelcomeMessageOnStartup", function () {
     it("should print the welcome message when it detects startup", async function () {
         //Uncomment this line to get logger output during this test
         // LogHelper.configure(config)
-        configMock.mock('getConfig', config);
         let messageLineIndex = 0;
         let clearCommandSent = false;
         mitm.on("connection", function (s) {

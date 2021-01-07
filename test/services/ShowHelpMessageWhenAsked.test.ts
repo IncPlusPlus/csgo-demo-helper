@@ -35,6 +35,7 @@ describe("ShowHelpMessageWhenAsked", function () {
 
     beforeEach(function () {
         configMock = ImportMock.mockClass(configModule, 'Config');
+        configMock.mock('getConfig', config);
         mitm = _();
     });
 
@@ -46,7 +47,6 @@ describe("ShowHelpMessageWhenAsked", function () {
     it("shows the help message when 'dh help' is called", async function () {
         //Uncomment this line to get logger output during this test
         // LogHelper.configure(config)
-        configMock.mock('getConfig', config);
         let messageLineIndex = 0;
         mitm.on("connection", function (s) {
             s.on("data", function (data) {
