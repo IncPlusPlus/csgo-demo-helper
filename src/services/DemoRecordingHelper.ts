@@ -65,14 +65,33 @@ export class DemoRecordingHelper implements ListenerService {
         //when attempting to start the recording process check if we get told to wait for the next round to start to be able to record a demo. Log the fact that recording has to be delayed (both to this console and to the game) but will start when the next round begins. Add a service to wait for the console output indicating a round ended
     }
 
+    public static mostRecentDemoInfoToString(demoName: string, existingDemoInfo: Pair<number, number>): string {
+        let highestDemoNumber = existingDemoInfo[0];
+        let highestPartNumber = existingDemoInfo[1];
+        return `${demoName}${highestDemoNumber > 1 ? `-${highestDemoNumber}` : ``}${highestPartNumber > 1 ? `-pt${highestPartNumber}` : ``}`;
+    }
+
     /**
+     * Returns the latest demo that goes by the name provided (typically includes the timestamp like "office-1-8-2021").
+     * If this returns [0,0], no demo exists with the provided name. If you receive [1,1], the demo exists and is the
+     * only demo with that name (meaning there are no additional parts and no sequels). If this returns [2,1], the demo
+     * exists and so does a sequel (most likely named "office-1-8-2021-2"). If this returns [2,2], then the latest
+     * demo is "office-1-8-2021-2-pt2".
+     *
      * @param demoName the name of the demo to look for (before a "-2" or "-3" or "-pt2" or "-pt3)
      * @returns a Pair with the left number being the highest demo number found with this name and the right number being the highest part number associated with the highest demo number. If one of these values is 0, that respective part of the demo name doesn't exist in the latest demo under the specified demoName.
      */
-    private findLatestDemoWithName(demoName: string): Pair<number, number> {
-        //Highest demo number with the given demoName
+    public static findLatestDemoWithName(demoName: string): Pair<number, number> {
+        // Highest demo number with the given demoName
         let highestDemoNumber = 1;
         let highestPartNumber = 1;
+        /*
+         * Note that because we start the search for the sequel number first and ignore the part, it is expected that
+         * the prequel demo exists as well. If "office-1-8-2021-3-pt2" exists, so should "office-1-8-2021-3".
+         *
+         * Likewise, it is also expected, regardless of "parts", that demo prequels exist as well as sequels.
+         * If "office-1-8-2021-2" exists, so should "office-1-8-2021".
+         */
         while (existsSync(`${ConfigFactory.getConfigInstance().getConfig().csgo.csgo_demos_folder}/${demoName}${highestDemoNumber > 1 ? `-${highestDemoNumber}` : ``}.dem`)) {
             highestDemoNumber++;
         }
@@ -86,12 +105,6 @@ export class DemoRecordingHelper implements ListenerService {
         return [highestDemoNumber, highestPartNumber];
     }
 
-    private static mostRecentDemoInfoToString(demoName: string, existingDemoInfo: Pair<number, number>): string {
-        let highestDemoNumber = existingDemoInfo[0];
-        let highestPartNumber = existingDemoInfo[1];
-        return `${demoName}${highestDemoNumber > 1 ? `-${highestDemoNumber}` : ``}${highestPartNumber > 1 ? `-pt${highestPartNumber}` : ``}`;
-    }
-
     private async promptUserForNewOrSplitDemo(demoName: string, mostRecentDemoName: string, existingDemoInfo: Pair<number, number>): Promise<string> {
         let highestDemoNumber = existingDemoInfo[0];
         let highestPartNumber = existingDemoInfo[1];
@@ -99,15 +112,19 @@ export class DemoRecordingHelper implements ListenerService {
         promptMessage = promptMessage.map(value => "echo \"" + value + "\"");
         const decisionLine = await SubscriberManagerFactory.getSubscriberManager().searchForValue(promptMessage, DemoRecordingHelper.recordSplitOrNewDemoRegExp, true);
         const userDecision = DemoRecordingHelper.recordSplitOrNewDemoRegExp.exec(decisionLine);
+        let latestDemoName = '';
         switch (userDecision![1]) {
             case 'new':
-                return `${demoName}-${highestDemoNumber + 1}`
+                latestDemoName = `${demoName}-${highestDemoNumber + 1}`
+                break;
             case 'split':
-                return `${demoName}${highestDemoNumber > 1 ? `-${highestDemoNumber}` : ``}-pt${highestPartNumber + 1}`;
+                latestDemoName = `${demoName}${highestDemoNumber > 1 ? `-${highestDemoNumber}` : ``}-pt${highestPartNumber + 1}`;
+                break;
             case 'cancel':
-                return '';
+                latestDemoName = '';
+                break;
         }
-        throw Error(`Finished execution of ${this.promptUserForNewOrSplitDemo} without properly returning.`);
+        return latestDemoName;
     }
 
     //TODO: Maybe make this stop a potential current demo recording session to avoid one more error checking case
@@ -132,7 +149,7 @@ export class DemoRecordingHelper implements ListenerService {
         demoName += `${mapName}-${timeStamp}`
         //If this demo name already exists, prompt as to whether this is a new game or whether this is a continued recording of a yet-unfinished game
         if (existsSync(`${ConfigFactory.getConfigInstance().getConfig().csgo.csgo_demos_folder}/${demoName}.dem`)) {
-            const existingDemoInfo = this.findLatestDemoWithName(demoName);
+            const existingDemoInfo = DemoRecordingHelper.findLatestDemoWithName(demoName);
             try {
                 demoName = await this.promptUserForNewOrSplitDemo(demoName, DemoRecordingHelper.mostRecentDemoInfoToString(demoName, existingDemoInfo), existingDemoInfo);
             } catch (e) {
