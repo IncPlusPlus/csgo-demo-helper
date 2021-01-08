@@ -135,19 +135,20 @@ export class SubscriberManager {
                      */
                     const subscriberCanHandleLine = this.subscribers[i].canHandle(line);
                     if (subscriberCanHandleLine) {
-                        this.subscriberLog.debug(`Selected listener '${this.subscribers[i].name()}' to handle line '${line}'.`);
+                        const selectedListener: ListenerService = this.subscribers[i];
+                        this.subscriberLog.debug(`Selected listener '${selectedListener.name()}' to handle line '${line}'.`);
                         //We've found a suitable method to handle the message
                         try {
                             //Can't run 'await this.subscribers[i].handleLine(line);' because this would cause a deadlock
-                            this.subscribers[i].handleLine(line)
+                            selectedListener.handleLine(line)
                                 .then(() => this.subscriberLog.debug(
-                                    `Listener '${this.subscribers[i].name()}' finished handling line '${line}'.`)
+                                    `Listener '${selectedListener.name()}' finished handling line '${line}'.`)
                                 ).catch(reason => {
-                                this.logListenerError(this.subscribers[i], line, reason);
+                                this.logListenerError(selectedListener, line, reason);
                             });
                         } catch (e) {
-                            this.logListenerError(this.subscribers[i], line, e);
-                            this.subscriberLog.error(`Additionally, this error was thrown in a non-async manner. Instead of taking the form of a rejected promise, this error was received because it was thrown from handleLine of ${this.subscribers[i]}. Please try to avoid this in the future.`);
+                            this.logListenerError(selectedListener, line, e);
+                            this.subscriberLog.error(`Additionally, this error was thrown in a non-async manner. Instead of taking the form of a rejected promise, this error was received because it was thrown from handleLine of ${selectedListener.name()}. Please try to avoid this in the future.`);
                         }
                         break;
                     }
