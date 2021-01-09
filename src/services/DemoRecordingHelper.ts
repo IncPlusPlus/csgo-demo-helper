@@ -155,9 +155,9 @@ export class DemoRecordingHelper implements ListenerService {
             } catch (e) {
                 if (RegExp('.*user input.*').test(e)) {
                     ConsoleHelper.padConsole(5);
-                    SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo \"Timed out waiting for user to respond to the demo splitting prompt. Cancelling...\"`)
+                    SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo Timed out waiting for user to respond to the demo splitting prompt. Cancelling...`);
                     ConsoleHelper.padConsole(5);
-                    DemoRecordingHelper.log.warn(`Timed out waiting for user to respond to the demo splitting prompt. Cancelling...`)
+                    DemoRecordingHelper.log.warn(`Timed out waiting for user to respond to the demo splitting prompt. Cancelling...`);
                     demoName = '';
                 } else {
                     DemoRecordingHelper.log.warn('Encountered an error when prompting the user whether to split or make a new demo.');
@@ -167,8 +167,8 @@ export class DemoRecordingHelper implements ListenerService {
             }
             if (!demoName) {
                 //User cancelled the request to record a demo
-                SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Cancelling');
-                DemoRecordingHelper.log.debug('User cancelled or waited too long when prompted whether to split or make a new demo.');
+                SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Cancelled the demo splitting prompt!!!');
+                DemoRecordingHelper.log.warn('User cancelled or waited too long when prompted whether to split or make a new demo.');
                 return;
             }
         }
