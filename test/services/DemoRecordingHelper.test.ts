@@ -2,7 +2,7 @@ import {ImportMock, MockManager} from 'ts-mock-imports';
 import * as configModule from '../../src/utils/Config';
 import {Config} from '../../src/utils/Config';
 import * as steamIDModule from '../../src/utils/SteamID';
-import {expect} from 'chai';
+import {expect, use} from 'chai';
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
 import {createSandbox} from 'sinon';
 import {SubscriberManager} from '../../src/utils/SubscriberManager';
@@ -14,13 +14,18 @@ import {join} from 'path';
 import {Pair} from "../../src/utils/Pair";
 import {Cvars} from "../../src/utils/Cvars";
 import {ConsoleHelper} from "../../src/utils/ConsoleHelper";
+import {ConfigFactory} from "../../src/utils/ConfigFactory";
 import _ = require("mitm");
+import chaiAsPromised = require("chai-as-promised");
+
+use(chaiAsPromised);
 
 describe("DemoRecordingHelper", function () {
     const sandbox = createSandbox();
     let subMan: SubscriberManager;
     let mitm = _();
     mitm.disable();
+    ConfigFactory.clear();
     let configMock: MockManager<configModule.Config>;
     let steamIDMock: MockManager<steamIDModule.SteamID>;
     let config: { [p: string]: any } = {
@@ -41,7 +46,7 @@ describe("DemoRecordingHelper", function () {
         }, internals: {
             log_level: 'trace',
             console_output_promise_wait_time: 2,
-            console_user_input_wait_time: 30,
+            console_user_input_wait_time: 3,
         }
     };
     const expectedCommandsWhenRecordingStartsSuccessfully = ['echo DemoHelper started recording demo successfully!\n', 'echo DemoHelper applied recording preferences and recorded a message in demo successfully!\n', 'echo DemoHelper set the volume of player The Lovely Potato to 0.\n'];
@@ -111,6 +116,7 @@ netcon  :  172.30.160.1:2121
         mitm.disable();
         SubscriberManagerFactory.clear();
         sandbox.restore();
+        mock.restore();
     });
 
     describe("Recording scenarios", function () {
@@ -168,10 +174,208 @@ netcon  :  172.30.160.1:2121
                 expect(setCvarStub.callCount).eq(1);
                 expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
             });
+
+            it(`All defaults. New 'office-1-8-2021-2-pt3' exists already. User waits too long for prompt`, async function () {
+                this.timeout(6000);
+                //Uncomment this line to get logger output during this test
+                // LogHelper.configure(config);
+
+                mock({
+                    get [join(config.csgo.csgo_demos_folder, "casual-office-1-1-2021.dem")]() {
+                        return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
+                    }
+                });
+
+                const searchForValueStub = sandbox.stub(subMan, "searchForValue");
+                searchForValueStub.onFirstCall().returns(new Promise((resolve, reject) => setTimeout(() => reject('Timed out waiting for user input for the demo splitting prompt'), 4000)));
+                const cancellationMessages = [`echo Timed out waiting for user to respond to the demo splitting prompt. Cancelling...\n`, `echo Cancelled the demo splitting prompt!!!\n`];
+                let cancellationMessagesIndex = 0;
+                mitm.on("connection", function (s) {
+                    s.on("data", function (data) {
+                        expect(data.toString()).eq(cancellationMessages[cancellationMessagesIndex]);
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                        cancellationMessagesIndex++;
+                        if (cancellationMessagesIndex >= cancellationMessages.length) {
+                            s.end();
+                        }
+                    });
+                    s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                });
+                const findLatestDemoWithNameStub = sandbox.stub(DemoRecordingHelper, "findLatestDemoWithName");
+                findLatestDemoWithNameStub.returns([2, 3]);
+                const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                sandbox.stub(ConsoleHelper, "padConsole");
+                getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(0)));
+                getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                const recordingHelper = new DemoRecordingHelper();
+                subMan.subscribe(recordingHelper);
+                const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                await subMan.init();
+                await subMan.begin();
+                expect(canHandleSpy.callCount).eq(1);
+                expect(handleLineSpy.callCount).eq(1);
+                expect(setPlayerVolumeStub.callCount).eq(0);
+                expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                expect(setCvarStub.callCount).eq(0);
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                searchForValueStub.restore();
+            });
         });
 
         describe("Handling naming conflicts + user decisions", function () {
-            it(`All defaults. New 'office-1-8-2021-2-pt3' exists already`, async function () {
+            const existingLatestDemo: Pair<number, number>[] = [[1, 1], [2, 3]];
+            // Represents the resulting numbers if you were to make a new or split demo respectively for each individual case on the above line
+            const expectedDemoNameSuffixes = [[[2, 1], [1, 2]], [[3, 3], [2, 4]]];
+            // These tests cover naming conflicts where the user may choose to create a new demo or "split" the demo into two or more parts
+            for (let existingDemoInfoIndex = 0; existingDemoInfoIndex < existingLatestDemo.length; existingDemoInfoIndex++) {
+                for (let newOrSplit = 0; newOrSplit < 2; newOrSplit++) {
+                    const existingDemoNumber = existingLatestDemo[existingDemoInfoIndex][0];
+                    const existingPartNumber = existingLatestDemo[existingDemoInfoIndex][1];
+                    const expectedCreatedDemoNumber = expectedDemoNameSuffixes[existingDemoInfoIndex][newOrSplit][0];
+                    const expectedCreatedPartNumber = expectedDemoNameSuffixes[existingDemoInfoIndex][newOrSplit][1];
+                    // 0 is new, 1 is split
+                    const promptAction = newOrSplit ? 'split' : 'new';
+                    // Don't ask me to explain this. I can explain it perfectly fine, you'll just regret asking.
+                    const expectedResultingDemoName = `casual-office-1-1-2021${expectedCreatedDemoNumber > 1 ? `-${expectedCreatedDemoNumber}` : ``}${newOrSplit ? `${expectedCreatedPartNumber > 1 ? `-pt${expectedCreatedPartNumber}` : ``}` : ``}\n`;
+                    it(`All defaults. Demo 'office-1-8-2021${existingDemoNumber > 1 ? `-${existingDemoNumber}` : ``}${existingPartNumber > 1 ? `-pt${existingPartNumber}` : ``}' exists already and user chooses '${promptAction}' when prompted`, async function () {
+                        //Uncomment this line to get logger output during this test
+                        // LogHelper.configure(config);
+
+                        mock({
+                            /*
+                             * The name of this demo doesn't need to change from the base name as we only need
+                             * DemoRecordingHelper to check if the file already exists and it'll hand off the job of
+                             * finding the latest demo name to findLatestDemoWithName() which we've already stubbed.
+                             */
+                            get [join(config.csgo.csgo_demos_folder, "casual-office-1-1-2021.dem")]() {
+                                return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
+                            }
+                        });
+
+                        let recording = false;
+                        let promptMessageIndex = 0;
+                        let postRecordingIndex = 0;
+                        mitm.on("connection", function (s) {
+                            s.on("data", function (data) {
+                                if (promptMessageIndex > 6) {
+                                    if (!recording) {
+                                        expect(data.toString()).eq('record ' + expectedResultingDemoName);
+                                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                                        if (data.toString() === 'record ' + expectedResultingDemoName) {
+                                            s.write('Recording to casual-office-1-1-2021.dem...\n');
+                                            recording = true;
+                                        }
+                                    } else {
+                                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(true);
+                                        expect(data.toString()).eq(expectedCommandsWhenRecordingStartsSuccessfully[postRecordingIndex]);
+                                        postRecordingIndex++;
+                                        if (postRecordingIndex >= expectedCommandsWhenRecordingStartsSuccessfully.length) {
+                                            s.write('Completed demo, recording time 45.7, game frames 1807.\n');
+                                            s.end();
+                                        }
+                                    }
+                                } else {
+                                    // This is the user prompt asking about whether to split or make a new demo.
+                                    promptMessageIndex++;
+                                    if (promptMessageIndex === 6) {
+                                        // I could just have a boolean that I use to mark when I've sent the new/split/cancel command back but... meh...
+                                        s.write(`dh ${promptAction}\n`);
+                                        promptMessageIndex++;
+                                    }
+                                }
+                            });
+                            s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                        });
+                        const findLatestDemoWithNameStub = sandbox.stub(DemoRecordingHelper, "findLatestDemoWithName");
+                        findLatestDemoWithNameStub.returns(existingLatestDemo[existingDemoInfoIndex]);
+                        const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                        const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                        const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                        sandbox.stub(ConsoleHelper, "padConsole");
+                        getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(0)));
+                        getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                        getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                        const recordingHelper = new DemoRecordingHelper();
+                        subMan.subscribe(recordingHelper);
+                        const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                        const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                        const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                        await subMan.init();
+                        await subMan.begin();
+                        expect(canHandleSpy.callCount).eq(2);
+                        expect(handleLineSpy.callCount).eq(2);
+                        expect(setPlayerVolumeStub.callCount).eq(1);
+                        expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                        expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                        expect(setCvarStub.callCount).eq(1);
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                    });
+                }
+            }
+
+            it(`All defaults. New 'office-1-8-2021-2-pt3' exists already. User cancels prompt`, async function () {
+                //Uncomment this line to get logger output during this test
+                // LogHelper.configure(config);
+
+                const expectedRecordCommand = 'record casual-office-1-1-2021-2-pt4\n';
+                mock({
+                    get [join(config.csgo.csgo_demos_folder, "casual-office-1-1-2021.dem")]() {
+                        return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
+                    }
+                });
+
+                let promptMessageIndex = 0;
+                mitm.on("connection", function (s) {
+                    s.on("data", function (data) {
+                        if (promptMessageIndex > 6) {
+                            expect(data.toString()).eq(`echo Cancelled the demo splitting prompt!!!\n`);
+                            expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                            s.write('Completed demo, recording time 45.7, game frames 1807.\n');
+                            s.end();
+                        } else {
+                            // This is the user prompt asking about whether to split or make a new demo.
+                            promptMessageIndex++;
+                            if (promptMessageIndex === 6) {
+                                // I could just have a boolean that I use to mark when I've sent the new/split/cancel command back but... meh...
+                                s.write('dh cancel\n');
+                                promptMessageIndex++;
+                            }
+                        }
+                    });
+                    s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                });
+                const findLatestDemoWithNameStub = sandbox.stub(DemoRecordingHelper, "findLatestDemoWithName");
+                findLatestDemoWithNameStub.returns([2, 3]);
+                const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                sandbox.stub(ConsoleHelper, "padConsole");
+                getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(0)));
+                getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                const recordingHelper = new DemoRecordingHelper();
+                subMan.subscribe(recordingHelper);
+                const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                await subMan.init();
+                await subMan.begin();
+                expect(canHandleSpy.callCount).eq(2);
+                expect(handleLineSpy.callCount).eq(2);
+                expect(setPlayerVolumeStub.callCount).eq(0);
+                expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                expect(setCvarStub.callCount).eq(0);
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
             });
         });
     });
@@ -183,16 +387,13 @@ netcon  :  172.30.160.1:2121
             beforeEach(function () {
                 recordingHelper = new DemoRecordingHelper();
             });
-            afterEach(function () {
-                mock.restore();
-            });
             it("can tell when there are no demos", function () {
                 mock({
                     get [join(config.csgo.csgo_demos_folder)]() {
                         return {};
                     }
                 });
-                const result: Pair<number, number> = new DemoRecordingHelper().findLatestDemoWithName(sampleDemoName);
+                const result: Pair<number, number> = DemoRecordingHelper.findLatestDemoWithName(sampleDemoName);
                 const highestDemoNumber = result[0];
                 const highestPartNumber = result[1];
                 expect(highestDemoNumber).to.eq(0);
@@ -205,7 +406,7 @@ netcon  :  172.30.160.1:2121
                         return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
                     }
                 });
-                const result: Pair<number, number> = new DemoRecordingHelper().findLatestDemoWithName(sampleDemoName);
+                const result: Pair<number, number> = DemoRecordingHelper.findLatestDemoWithName(sampleDemoName);
                 const highestDemoNumber = result[0];
                 const highestPartNumber = result[1];
                 expect(highestDemoNumber).to.eq(1);
@@ -221,7 +422,7 @@ netcon  :  172.30.160.1:2121
                         return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
                     }
                 });
-                const result: Pair<number, number> = new DemoRecordingHelper().findLatestDemoWithName(sampleDemoName);
+                const result: Pair<number, number> = DemoRecordingHelper.findLatestDemoWithName(sampleDemoName);
                 const highestDemoNumber = result[0];
                 const highestPartNumber = result[1];
                 expect(highestDemoNumber).to.eq(1);
@@ -237,7 +438,7 @@ netcon  :  172.30.160.1:2121
                         return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
                     }
                 });
-                const result: Pair<number, number> = new DemoRecordingHelper().findLatestDemoWithName(sampleDemoName);
+                const result: Pair<number, number> = DemoRecordingHelper.findLatestDemoWithName(sampleDemoName);
                 const highestDemoNumber = result[0];
                 const highestPartNumber = result[1];
                 expect(highestDemoNumber).to.eq(2);
@@ -259,7 +460,7 @@ netcon  :  172.30.160.1:2121
                         return Buffer.from([8, 6, 7, 5, 3, 0, 9]);
                     }
                 });
-                const result: Pair<number, number> = new DemoRecordingHelper().findLatestDemoWithName(sampleDemoName);
+                const result: Pair<number, number> = DemoRecordingHelper.findLatestDemoWithName(sampleDemoName);
                 const highestDemoNumber = result[0];
                 const highestPartNumber = result[1];
                 expect(highestDemoNumber).to.eq(2);
