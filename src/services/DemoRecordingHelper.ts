@@ -153,7 +153,7 @@ export class DemoRecordingHelper implements ListenerService {
             try {
                 demoName = await this.promptUserForNewOrSplitDemo(demoName, DemoRecordingHelper.mostRecentDemoInfoToString(demoName, existingDemoInfo), existingDemoInfo);
             } catch (e) {
-                if (RegExp('.*user decision.*').test(e)) {
+                if (RegExp('.*user input.*').test(e)) {
                     ConsoleHelper.padConsole(5);
                     SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo \"Timed out waiting for user to respond to the demo splitting prompt. Cancelling...\"`)
                     ConsoleHelper.padConsole(5);
