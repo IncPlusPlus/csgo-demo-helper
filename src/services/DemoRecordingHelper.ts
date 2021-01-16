@@ -29,6 +29,7 @@ import {SubscriberManagerFactory} from "../utils/SubscriberManagerFactory";
 import {ConfigFactory} from "../utils/ConfigFactory";
 
 export class DemoRecordingHelper implements ListenerService {
+    public static RecordingStartMustBeDelayed = ['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `echo If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`];
     private static readonly log = LogHelper.getLogger('DemoRecordingHelper');
     private static readonly demoRecordingEndRegExp = RegExp('^Completed demo, recording time \\d+\\.\\d+, game frames \\d+\\.$');
     //TODO: Allow user to input command like "dh rec new" to skip the prompt since they'd know if this is a new game or whether they rejoined an existing one
@@ -220,7 +221,7 @@ export class DemoRecordingHelper implements ListenerService {
         } else if (match![4]) {
             //Please start demo recording after current round is over.
             // noinspection SpellCheckingInspection
-            SubscriberManagerFactory.getSubscriberManager().sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `echo If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
+            SubscriberManagerFactory.getSubscriberManager().sendMessage(DemoRecordingHelper.RecordingStartMustBeDelayed);
             await SubscriberManagerFactory.getSubscriberManager().searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp, false);
             await this.attemptStartRecording(demoName);
         }
