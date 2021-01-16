@@ -2,6 +2,7 @@ import {ImportMock, MockManager} from 'ts-mock-imports';
 import * as configModule from '../../src/utils/Config';
 import {Config} from '../../src/utils/Config';
 import * as steamIDModule from '../../src/utils/SteamID';
+import {SteamID} from '../../src/utils/SteamID';
 import {expect, use} from 'chai';
 import {SubscriberManagerFactory} from "../../src/utils/SubscriberManagerFactory";
 import {createSandbox} from 'sinon';
@@ -15,6 +16,7 @@ import {Pair} from "../../src/utils/Pair";
 import {Cvars} from "../../src/utils/Cvars";
 import {ConsoleHelper} from "../../src/utils/ConsoleHelper";
 import {ConfigFactory} from "../../src/utils/ConfigFactory";
+import axios from "axios";
 import _ = require("mitm");
 import chaiAsPromised = require("chai-as-promised");
 
@@ -214,7 +216,7 @@ netcon  :  172.30.160.1:2121
 
                 const searchForValueStub = sandbox.stub(subMan, "searchForValue");
                 searchForValueStub.onFirstCall().returns(new Promise((resolve, reject) => setTimeout(() => reject('Timed out waiting for user input for the demo splitting prompt'), 4000)));
-                const cancellationMessages = [`echo Timed out waiting for user to respond to the demo splitting prompt. Cancelling...\n`, `echo Cancelled the demo splitting prompt!!!\n`];
+                const cancellationMessages = [`echo Timed out or errored out waiting for user to respond to the demo splitting prompt. Cancelling...\n`, `echo Cancelled the demo splitting prompt!!!\n`];
                 let cancellationMessagesIndex = 0;
                 mitm.on("connection", function (s) {
                     s.on("data", function (data) {
@@ -589,6 +591,48 @@ netcon  :  172.30.160.1:2121
                 expect(setCvarStub.callCount).eq(0);
                 expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
             });
+        });
+
+        it("throws an error if the player's name can't be retrieved", async function () {
+            // Replace axios.get() with a function that just throws.
+            steamIDMock.restore();
+            sandbox.replace(axios, "get", url => {
+                throw Error('THIS ERROR IS INTENTIONALLY THROWN INSIDE OF A SPECIFIC TEST');
+            });
+
+            //Uncomment this line to get logger output during this test
+            // LogHelper.configure(config);
+
+            mitm.on("connection", function (s) {
+                s.on("data", function (data) {
+                    expect(data.toString()).eq('echo Failed to start recording. Check the log file for details.\n');
+                    expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                    s.end();
+                });
+                s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+            });
+            const setCvarStub = sandbox.stub(Cvars, "setCvar");
+            const getCvarStub = sandbox.stub(Cvars, "getCvar");
+            const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+            sandbox.stub(ConsoleHelper, "padConsole");
+            getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(0)));
+            getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+            getMapNameStub.returns(new Promise(resolve => resolve('office')));
+            const recordingHelper = new DemoRecordingHelper();
+            subMan.subscribe(recordingHelper);
+            const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+            const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+            const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+            expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+            await subMan.init();
+            await subMan.begin();
+            expect(canHandleSpy.callCount).eq(1);
+            expect(handleLineSpy.callCount).eq(1);
+            expect(setPlayerVolumeStub.callCount).eq(0);
+            expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+            expect(getCvarStub.calledWith('game_type')).to.eq(true);
+            expect(setCvarStub.callCount).eq(1);
+            expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
         });
     });
 
