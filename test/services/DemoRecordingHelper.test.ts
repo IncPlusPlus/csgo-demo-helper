@@ -124,8 +124,54 @@ netcon  :  172.30.160.1:2121
 
     describe("Recording scenarios", function () {
         // This suite is for the if/else block in attemptStartRecording
-        describe("Handling the different outcomes of the record command", function () {
-            it(`All defaults. New demo and no others exist at the moment. Demo recording begins successfully`, async function () {
+        describe('Outcomes of the record command', function () {
+            it(`Already recording`, async function () {
+                //Uncomment this line to get logger output during this test
+                // LogHelper.configure(config);
+
+                const expectedRecordCommand = 'record casual-office-1-1-2021\n';
+                let notedThatRecordingAlreadyInProgress = false;
+                let postRecordingIndex = 0;
+                mitm.on("connection", function (s) {
+                    s.on("data", function (data) {
+                        if (!notedThatRecordingAlreadyInProgress) {
+                            expect(data.toString()).eq(expectedRecordCommand);
+                            expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                            s.write('Already recording.\n');
+                            notedThatRecordingAlreadyInProgress = true;
+                        } else {
+                            expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                            expect(data.toString()).eq('echo Already recording a demo!!\n');
+                            s.end();
+                        }
+                    });
+                    s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                });
+                const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                sandbox.stub(ConsoleHelper, "padConsole");
+                getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(0)));
+                getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                const recordingHelper = new DemoRecordingHelper();
+                subMan.subscribe(recordingHelper);
+                const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                await subMan.init();
+                await subMan.begin();
+                expect(canHandleSpy.callCount).eq(1);
+                expect(handleLineSpy.callCount).eq(1);
+                expect(setPlayerVolumeStub.callCount).eq(1);
+                expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                expect(setCvarStub.callCount).eq(1);
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+            });
+
+            it(`Demo recording begins successfully`, async function () {
                 //Uncomment this line to get logger output during this test
                 // LogHelper.configure(config);
 
@@ -177,7 +223,82 @@ netcon  :  172.30.160.1:2121
                 expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
             });
 
-            it(`All defaults. New demo and no others exist at the moment. Demo recording fails due to getGameModeString() rejecting its promise`, async function () {
+            it(`Please start demo recording after current round is over`, async function () {
+                //Uncomment this line to get logger output during this test
+                // LogHelper.configure(config);
+
+                const expectedRecordCommand = 'record casual-office-1-1-2021\n';
+                let recording = false;
+                let postRecordingIndex = 0;
+                let notedThatRecordingAlreadyInProgress = false;
+                let initialFailureCaseComplete = false;
+                let postFailureIndex = 0;
+                mitm.on("connection", function (s) {
+                    s.on("data", function (data) {
+                        if (!initialFailureCaseComplete) {
+                            if (!notedThatRecordingAlreadyInProgress) {
+                                expect(data.toString()).eq(expectedRecordCommand);
+                                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                                s.write('Please start demo recording after current round is over.\n');
+                                notedThatRecordingAlreadyInProgress = true;
+                            } else {
+                                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                                expect(data.toString()).eq(DemoRecordingHelper.RecordingStartMustBeDelayed.concat('echo')[postFailureIndex] + '\n');
+                                postFailureIndex++
+                                if (postFailureIndex >= 3) {
+                                    setTimeout(() => s.write('dh roundover\n'), 500);
+                                    initialFailureCaseComplete = true;
+                                    // s.end();
+                                }
+                            }
+                        } else {
+                            if (!recording) {
+                                expect(data.toString()).eq(expectedRecordCommand);
+                                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                                if (data.toString() === expectedRecordCommand) {
+                                    s.write('Recording to casual-office-1-1-2021.dem...\n');
+                                    recording = true;
+                                }
+                            } else {
+                                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(true);
+                                expect(data.toString()).eq(expectedCommandsWhenRecordingStartsSuccessfully[postRecordingIndex]);
+                                postRecordingIndex++;
+                                if (postRecordingIndex >= expectedCommandsWhenRecordingStartsSuccessfully.length) {
+                                    s.write('Completed demo, recording time 45.7, game frames 1807.\n');
+                                    s.end();
+                                }
+                            }
+                        }
+                    });
+                    s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                });
+                const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                sandbox.stub(ConsoleHelper, "padConsole");
+                getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(0)));
+                getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                const recordingHelper = new DemoRecordingHelper();
+                subMan.subscribe(recordingHelper);
+                const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                await subMan.init();
+                await subMan.begin();
+                expect(canHandleSpy.callCount).eq(2);
+                expect(handleLineSpy.callCount).eq(2);
+                expect(setPlayerVolumeStub.callCount).eq(2);
+                expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                expect(setCvarStub.callCount).eq(2);
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+            });
+        });
+
+        describe("Various error handling", function () {
+            it(`New demo and no others exist at the moment. Demo recording fails due to getGameModeString() rejecting its promise`, async function () {
                 //Uncomment this line to get logger output during this test
                 // LogHelper.configure(config);
 
@@ -203,7 +324,7 @@ netcon  :  172.30.160.1:2121
                 expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
             });
 
-            it(`All defaults. New 'office-1-8-2021-2-pt3' exists already. User waits too long for prompt`, async function () {
+            it(`New 'office-1-8-2021-2-pt3' exists already. User waits too long for prompt`, async function () {
                 this.timeout(6000);
                 //Uncomment this line to get logger output during this test
                 // LogHelper.configure(config);
