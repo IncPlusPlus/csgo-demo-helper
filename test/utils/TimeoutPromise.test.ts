@@ -8,6 +8,8 @@ import pDefer = require("p-defer");
 use(chaiAsPromised);
 
 describe("TimeoutPromise", function () {
+    // This is just used for passing an additionalDetailsAboutRequest argument to TimeoutPromise
+    const additionalDetailsAboutRequest = 'for use in a test';
     let configMock: MockManager<configModule.Config>;
     let config = {
         steam: {
@@ -58,6 +60,15 @@ describe("TimeoutPromise", function () {
             deferred.resolve(stringValueWhenResolved);
         }, (config.internals.console_output_promise_wait_time * 1000) + 500);
         return expect(new TimeoutPromise(config).timeoutPromise(deferred.promise, 'Some task name', false,)).to.eventually.be.rejected;
+    });
+
+    it("Will reject the TimeoutPromise when time runs out", function () {
+        const stringValueWhenResolved = "Hi there! I'm all done now!";
+        const deferred: pDefer.DeferredPromise<string> = pDefer();
+        setTimeout(function () {
+            deferred.resolve(stringValueWhenResolved);
+        }, (config.internals.console_output_promise_wait_time * 1000) + 500);
+        return expect(new TimeoutPromise(config).timeoutPromise(deferred.promise, 'Some task name', false, additionalDetailsAboutRequest)).to.eventually.be.rejectedWith(RegExp(`.*${additionalDetailsAboutRequest}.*`));
     });
 
     it("Will not cause unhandled rejection issues when a promise is resolved (user decision).", async function () {
