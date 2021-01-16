@@ -114,13 +114,13 @@ netcon  :  172.30.160.1:2121
         configMock.restore();
         steamIDMock.restore();
         mitm.disable();
+        ConfigFactory.clear();
         SubscriberManagerFactory.clear();
         sandbox.restore();
         mock.restore();
     });
 
     describe("Recording scenarios", function () {
-
         // This suite is for the if/else block in attemptStartRecording
         describe("Handling the different outcomes of the record command", function () {
             it(`All defaults. New demo and no others exist at the moment. Demo recording begins successfully`, async function () {
@@ -172,6 +172,32 @@ netcon  :  172.30.160.1:2121
                 expect(getCvarStub.calledWith('game_mode')).to.eq(true);
                 expect(getCvarStub.calledWith('game_type')).to.eq(true);
                 expect(setCvarStub.callCount).eq(1);
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+            });
+
+            it(`All defaults. New demo and no others exist at the moment. Demo recording fails due to getGameModeString() rejecting its promise`, async function () {
+                //Uncomment this line to get logger output during this test
+                // LogHelper.configure(config);
+
+                mitm.on("connection", function (s) {
+                    s.on("data", function (data) {
+                        expect(data.toString()).eq('echo Failed to start recording. Check the log file for details.\n');
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                        s.end();
+                    });
+                    s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                });
+                sandbox.stub(ConsoleHelper, "padConsole");
+                const getGameModeStringStub = sandbox.stub(DemoNamingHelper, "getGameModeString");
+                // Why do I need a timeout? Why can't the promise just reject immediately? I don't know!!!
+                getGameModeStringStub.returns(new Promise((resolve, reject) => setTimeout(() => {
+                    reject(Error('getGameModeString() intentionally rejected its promise for the sake of testing the try/catch block in DemoRecordingHelper'));
+                }, 500)));
+                const recordingHelper = new DemoRecordingHelper();
+                subMan.subscribe(recordingHelper);
+                expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                await subMan.init();
+                await subMan.begin();
                 expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
             });
 
@@ -229,7 +255,193 @@ netcon  :  172.30.160.1:2121
             });
         });
 
-        describe("Handling naming conflicts + user decisions", function () {
+        describe("Handling different configuration combinations", function () {
+            describe('config.demo_naming_helper.explicitly_mark_competitive_demos', function () {
+                for (let i = 0; i < 2; i++) {
+                    it(`Demo name ${i ? 'includes' : 'excludes'} the word 'competitive' when desired`, async function () {
+                        config.demo_naming_helper.explicitly_mark_competitive_demos = i;
+                        //Uncomment this line to get logger output during this test
+                        // LogHelper.configure(config);
+
+                        const expectedRecordCommand = `record ${i ? 'competitive-' : ''}office-1-1-2021\n`;
+                        let recording = false;
+                        let postRecordingIndex = 0;
+                        mitm.on("connection", function (s) {
+                            s.on("data", function (data) {
+                                if (!recording) {
+                                    expect(data.toString()).eq(expectedRecordCommand);
+                                    expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                                    if (data.toString() === expectedRecordCommand) {
+                                        s.write(`Recording to ${i ? 'competitive-' : ''}office-1-1-2021.dem...\n`);
+                                        recording = true;
+                                    }
+                                } else {
+                                    expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(true);
+                                    expect(data.toString()).eq(expectedCommandsWhenRecordingStartsSuccessfully[postRecordingIndex]);
+                                    postRecordingIndex++;
+                                    if (postRecordingIndex >= expectedCommandsWhenRecordingStartsSuccessfully.length) {
+                                        s.write('Completed demo, recording time 45.7, game frames 1807.\n');
+                                        s.end();
+                                    }
+                                }
+                            });
+                            s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                        });
+                        const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                        const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                        const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                        sandbox.stub(ConsoleHelper, "padConsole");
+                        getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(1)));
+                        getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                        getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                        const recordingHelper = new DemoRecordingHelper();
+                        subMan.subscribe(recordingHelper);
+                        const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                        const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                        const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                        await subMan.init();
+                        await subMan.begin();
+                        expect(canHandleSpy.callCount).eq(2);
+                        expect(handleLineSpy.callCount).eq(2);
+                        expect(setPlayerVolumeStub.callCount).eq(1);
+                        expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                        expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                        expect(setCvarStub.callCount).eq(1);
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                    });
+                }
+                after(function () {
+                    config.demo_naming_helper.explicitly_mark_competitive_demos = 0;
+                });
+            });
+
+            describe('config.demo_recording_helper.record_my_voice_in_demos', function () {
+                for (let i = 0; i < 2; i++) {
+                    it(`voice_loopback is turned ${i ? 'on' : 'off'} before recording the demo`, async function () {
+                        config.demo_recording_helper.record_my_voice_in_demos = i;
+                        //Uncomment this line to get logger output during this test
+                        // LogHelper.configure(config);
+
+                        const expectedRecordCommand = `record office-1-1-2021\n`;
+                        let recording = false;
+                        let postRecordingIndex = 0;
+                        mitm.on("connection", function (s) {
+                            s.on("data", function (data) {
+                                if (!recording) {
+                                    expect(data.toString()).eq(expectedRecordCommand);
+                                    expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                                    if (data.toString() === expectedRecordCommand) {
+                                        s.write(`Recording to office-1-1-2021.dem...\n`);
+                                        recording = true;
+                                    }
+                                } else {
+                                    expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(true);
+                                    expect(data.toString()).eq(expectedCommandsWhenRecordingStartsSuccessfully[postRecordingIndex]);
+                                    postRecordingIndex++;
+                                    if (postRecordingIndex >= expectedCommandsWhenRecordingStartsSuccessfully.length) {
+                                        s.write('Completed demo, recording time 45.7, game frames 1807.\n');
+                                        s.end();
+                                    }
+                                }
+                            });
+                            s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                        });
+                        const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                        const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                        const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                        sandbox.stub(ConsoleHelper, "padConsole");
+                        getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(1)));
+                        getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                        getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                        const recordingHelper = new DemoRecordingHelper();
+                        subMan.subscribe(recordingHelper);
+                        const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                        const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                        const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                        await subMan.init();
+                        await subMan.begin();
+                        expect(canHandleSpy.callCount).eq(2);
+                        expect(handleLineSpy.callCount).eq(2);
+                        expect(setPlayerVolumeStub.callCount).eq(1);
+                        expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                        expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                        expect(setCvarStub.callCount).eq(1);
+                        expect(Number(setCvarStub.getCalls()[0].lastArg)).eq(i);
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                    });
+                }
+                after(function () {
+                    config.demo_recording_helper.record_my_voice_in_demos = 1;
+                });
+            });
+
+            describe('config.demo_recording_helper.mute_my_voice_while_recording', function () {
+                for (let i = 0; i < 2; i++) {
+                    it(`My voice is ${i ? 'full volume' : 'muted'} before recording the demo`, async function () {
+                        config.demo_recording_helper.mute_my_voice_while_recording = i;
+                        //Uncomment this line to get logger output during this test
+                        // LogHelper.configure(config);
+
+                        const expectedRecordCommand = `record office-1-1-2021\n`;
+                        let recording = false;
+                        let postRecordingIndex = 0;
+                        mitm.on("connection", function (s) {
+                            s.on("data", function (data) {
+                                if (!recording) {
+                                    expect(data.toString()).eq(expectedRecordCommand);
+                                    expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                                    if (data.toString() === expectedRecordCommand) {
+                                        s.write(`Recording to office-1-1-2021.dem...\n`);
+                                        recording = true;
+                                    }
+                                } else {
+                                    expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(true);
+                                    // Don't bother checking the commands/messages because it includes stuff about setting the volume which changes for the iterations of this test
+                                    // expect(data.toString()).eq(expectedCommandsWhenRecordingStartsSuccessfully[postRecordingIndex]);
+                                    postRecordingIndex++;
+                                    if (postRecordingIndex >= expectedCommandsWhenRecordingStartsSuccessfully.length) {
+                                        s.write('Completed demo, recording time 45.7, game frames 1807.\n');
+                                        s.end();
+                                    }
+                                }
+                            });
+                            s.write(`${DemoRecordingHelper.BeginRecordingCommand}\n`);
+                        });
+                        const setCvarStub = sandbox.stub(Cvars, "setCvar");
+                        const getCvarStub = sandbox.stub(Cvars, "getCvar");
+                        const getMapNameStub = sandbox.stub(DemoNamingHelper, "getMapName");
+                        sandbox.stub(ConsoleHelper, "padConsole");
+                        getCvarStub.withArgs('game_mode').returns(new Promise(resolve => resolve(1)));
+                        getCvarStub.withArgs('game_type').returns(new Promise(resolve => resolve(0)));
+                        getMapNameStub.returns(new Promise(resolve => resolve('office')));
+                        const recordingHelper = new DemoRecordingHelper();
+                        subMan.subscribe(recordingHelper);
+                        const canHandleSpy = sandbox.spy(recordingHelper, "canHandle");
+                        const handleLineSpy = sandbox.spy(recordingHelper, "handleLine");
+                        const setPlayerVolumeStub = sandbox.stub(VoicePlayerVolume, "setVoicePlayerVolumeByName");
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                        await subMan.init();
+                        await subMan.begin();
+                        expect(canHandleSpy.callCount).eq(2);
+                        expect(handleLineSpy.callCount).eq(2);
+                        expect(setPlayerVolumeStub.callCount).eq(1);
+                        // If i is 1, the volume will be set to 0. If i is 0, the volume will be set to 1.
+                        expect(setPlayerVolumeStub.getCalls()[0].lastArg).eq(i ? 0 : 1);
+                        expect(getCvarStub.calledWith('game_mode')).to.eq(true);
+                        expect(getCvarStub.calledWith('game_type')).to.eq(true);
+                        expect(setCvarStub.callCount).eq(1);
+                        expect(DemoRecordingHelper.synchronouslyCheckIfRecording()).eq(false);
+                    });
+                }
+                after(function () {
+                    config.demo_recording_helper.mute_my_voice_while_recording = 1;
+                });
+            });
+        });
+
+        describe("Handling naming conflicts + splitting decisions", function () {
             const existingLatestDemo: Pair<number, number>[] = [[1, 1], [2, 3]];
             // Represents the resulting numbers if you were to make a new or split demo respectively for each individual case on the above line
             const expectedDemoNameSuffixes = [[[2, 1], [1, 2]], [[3, 3], [2, 4]]];

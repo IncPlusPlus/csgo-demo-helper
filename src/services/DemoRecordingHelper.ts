@@ -52,8 +52,6 @@ export class DemoRecordingHelper implements ListenerService {
             try {
                 await this.handleStartRecord();
             } catch (e) {
-                //It's okay to throw errors in this method because it's an expectation that SubscriberManager knows what to do.
-                // throw e;
                 DemoRecordingHelper.log.error(e);
                 SubscriberManagerFactory.getSubscriberManager().sendMessage('echo Failed to start recording. Check the log file for details.');
             }
@@ -135,7 +133,7 @@ export class DemoRecordingHelper implements ListenerService {
             gameMode = await DemoNamingHelper.getGameModeString();
             mapName = await DemoNamingHelper.getMapName(ConfigFactory.getConfigInstance().getConfig().demo_naming_helper.attempt_hide_map_prefix);
         } catch (e) {
-            throw e;
+            return Promise.reject(e);
         }
         const timeStamp = DemoNamingHelper.makeTimestamp();
         ConsoleHelper.padConsole(5);
