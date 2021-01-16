@@ -212,7 +212,7 @@ export class DemoRecordingHelper implements ListenerService {
         } else if (match![4]) {
             //Please start demo recording after current round is over.
             // noinspection SpellCheckingInspection
-            SubscriberManagerFactory.getSubscriberManager().sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
+            SubscriberManagerFactory.getSubscriberManager().sendMessage(['echo Failed to begin recording demo because a round was already in progress. Waiting for next round.', `echo If recording doesn't start on the next round, you may issue the command 'echo dh roundover' to begin recording.`]);
             await SubscriberManagerFactory.getSubscriberManager().searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp, false);
             await this.attemptStartRecording(demoName);
         }
