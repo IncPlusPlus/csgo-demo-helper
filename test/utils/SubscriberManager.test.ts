@@ -153,6 +153,44 @@ describe("SubscriberManager", function () {
             await subManPromise;
         });
 
+        it("test cvar won't be found if never printed", async function () {
+            this.timeout(4000);
+            //Uncomment this line to get logger output during this test
+            // LogHelper.configure(config)
+            mitm.on("connection", function (s) {
+                // noinspection JSUnusedLocalSymbols
+                s.on("data", function (data) {
+                    //This is where the request from the client for the value of dummy_cvar occurs
+                    s.write('"irrelevant_cvar" = "2"\n');
+                    s.end();
+                });
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init();
+            const subManPromise = subMan.begin().then();
+            await expect(subMan.requestCvarValue("dummy_cvar")).to.be.eventually.be.rejected;
+            await subManPromise;
+        });
+
+        it("special output grabbers (searchForValue() requests) are ignored when irrelevant", async function () {
+            this.timeout(4000);
+            const dummy_command = 'dummy_command';
+            //Uncomment this line to get logger output during this test
+            // LogHelper.configure(config)
+            mitm.on("connection", function (s) {
+                s.on("data", function (data) {
+                    expect(data.toString()).to.eq(dummy_command + '\n');
+                    s.write('random irrelevant output that shouldn\'t match the RegExp used in searchForValue\n');
+                    s.end();
+                });
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init();
+            const subManPromise = subMan.begin();
+            await expect(subMan.searchForValue(dummy_command, RegExp('THIS SHOULD NEVER MATCH ANYTHING'), false)).to.eventually.be.rejected;
+            await subManPromise;
+        });
+
         it("times out when console_output_promise_wait_time is exceeded", async function () {
             // Set the timeout to be just long enough for the promise from requestCvarValue to timeout + a little extra.
             // This test will run longer than the timeout but for whatever reason, it's
