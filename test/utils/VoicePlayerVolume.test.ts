@@ -120,7 +120,7 @@ Use voice_player_volume player# volume -- to set the player's volume to the give
         mitm.on("connection", function (s) {
             s.on("data", function (data) {
                 expect(data.toString()).eq('voice_player_volume\n');
-                s.write(voicePlayerVolumeOutputMatchmaking);
+                s.write(voicePlayerVolumeOutputMatchmaking + '\n');
                 s.end();
             });
         });
@@ -137,7 +137,7 @@ Use voice_player_volume player# volume -- to set the player's volume to the give
         mitm.on("connection", function (s) {
             s.on("data", function (data) {
                 expect(data.toString()).eq('voice_player_volume\n');
-                s.write(voicePlayerVolumeOutputMatchmaking);
+                s.write(voicePlayerVolumeOutputMatchmaking + '\n');
                 s.end();
             });
         });
@@ -166,7 +166,23 @@ Use voice_player_volume player# volume -- to set the player's volume to the give
         mitm.on("connection", function (s) {
             s.on("data", function (data) {
                 expect(data.toString()).eq('voice_player_volume\n');
-                s.write(voicePlayerVolumeOutputMatchmaking);
+                s.write(voicePlayerVolumeOutputMatchmaking + '\n');
+                // And then close this socket shortly afterwards
+                s.end();
+            });
+        });
+        await subMan.init();
+        const subManBeginPromise: Promise<void> = subMan.begin();
+        await expect(VoicePlayerVolume.getVoicePlayerVolumeValues()).to.eventually.be.deep.eq(voicePlayerVolumeObjectMatchmaking);
+        await subManBeginPromise;
+    });
+
+    it("will only start reading after seeing the padding dashes", async function () {
+        mitm.on("connection", function (s) {
+            s.on("data", function (data) {
+                expect(data.toString()).eq('voice_player_volume\n');
+                s.write('4   The Lovely Potato      1.00' + '\n');
+                s.write(voicePlayerVolumeOutputMatchmaking + '\n');
                 // And then close this socket shortly afterwards
                 s.end();
             });

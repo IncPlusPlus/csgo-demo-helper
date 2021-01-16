@@ -32,6 +32,10 @@ export class VoicePlayerVolume {
 
 class VoicePlayerVolumeListener implements ListenerService {
     private static readonly whitespaceRegExp: RegExp = /\s{2,}/g;
+    /*
+     * TODO: This RegExp could be made a little more robust by matching the line exactly to combat the unlikely event
+     *  of another player putting dashes in the chat while an operation is in progress.
+     */
     private static readonly paddingDashesRegExp: RegExp = RegExp('-{2,}');
     private static readonly voicePlayerVolumeRegExp: RegExp = RegExp('(\\d+)\ +(.*)\ +(\\d\\.\\d{2})');
     private players: { Volume: number; PlayerName: string; PlayerNumber: number }[] = [];
@@ -52,21 +56,28 @@ class VoicePlayerVolumeListener implements ListenerService {
     }
 
     handleLine(consoleLine: string): Promise<void> {
-        if (!this.reading && VoicePlayerVolumeListener.paddingDashesRegExp.test(consoleLine)) {
-            this.reading = true;
-        } else if (this.reading && VoicePlayerVolumeListener.voicePlayerVolumeRegExp.test(consoleLine)) {
-            let playerInfo = VoicePlayerVolumeListener.voicePlayerVolumeRegExp.exec(consoleLine);
-            const playerVolume = {
-                PlayerNumber: Number(playerInfo![1]),
-                PlayerName: String(playerInfo![2].trim()),
-                Volume: Number(playerInfo![3]),
-            };
-            if (this.reading) {
-                this.players.push(playerVolume);
+        if (!this.reading) {
+            if (VoicePlayerVolumeListener.paddingDashesRegExp.test(consoleLine)) {
+                this.reading = true;
             }
-        } else if (this.reading && VoicePlayerVolumeListener.paddingDashesRegExp.test(consoleLine)) {
-            this.reading = false;
-            this.promise.resolve(this.players);
+        } else {
+            if (VoicePlayerVolumeListener.voicePlayerVolumeRegExp.test(consoleLine)) {
+                let playerInfo = VoicePlayerVolumeListener.voicePlayerVolumeRegExp.exec(consoleLine);
+                const playerVolume = {
+                    PlayerNumber: Number(playerInfo![1]),
+                    PlayerName: String(playerInfo![2].trim()),
+                    Volume: Number(playerInfo![3]),
+                };
+                this.players.push(playerVolume);
+                /*
+                 * There is no need to write out "else if (VoicePlayerVolumeListener.paddingDashesRegExp.test(consoleLine)"
+                 * here because this line MUST be the padding dashes if it isn't the voicePlayerVolumeRegExp as those
+                 * are the only two things that canHandle returns true for. We can simply use a dumb else.
+                 */
+            } else {
+                this.reading = false;
+                this.promise.resolve(this.players);
+            }
         }
         return Promise.resolve(undefined);
     }
