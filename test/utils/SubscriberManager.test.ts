@@ -45,8 +45,6 @@ describe("SubscriberManager", function () {
         configMock = ImportMock.mockClass(configModule, 'Config');
         mitm = _();
         configMock.mock('getConfig', config);
-
-
     });
 
     afterEach(function () {
@@ -152,6 +150,44 @@ describe("SubscriberManager", function () {
             const cvarRequest: Promise<number> = subMan.requestCvarValue("dummy_cvar");
             const subManPromise = subMan.begin().then();
             await expect(cvarRequest).to.be.eventually.eq(2);
+            await subManPromise;
+        });
+
+        it("test cvar won't be found if never printed", async function () {
+            this.timeout(4000);
+            //Uncomment this line to get logger output during this test
+            // LogHelper.configure(config)
+            mitm.on("connection", function (s) {
+                // noinspection JSUnusedLocalSymbols
+                s.on("data", function (data) {
+                    //This is where the request from the client for the value of dummy_cvar occurs
+                    s.write('"irrelevant_cvar" = "2"\n');
+                    s.end();
+                });
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init();
+            const subManPromise = subMan.begin().then();
+            await expect(subMan.requestCvarValue("dummy_cvar")).to.be.eventually.be.rejected;
+            await subManPromise;
+        });
+
+        it("special output grabbers (searchForValue() requests) are ignored when irrelevant", async function () {
+            this.timeout(4000);
+            const dummy_command = 'dummy_command';
+            //Uncomment this line to get logger output during this test
+            // LogHelper.configure(config)
+            mitm.on("connection", function (s) {
+                s.on("data", function (data) {
+                    expect(data.toString()).to.eq(dummy_command + '\n');
+                    s.write('random irrelevant output that shouldn\'t match the RegExp used in searchForValue\n');
+                    s.end();
+                });
+            });
+            const subMan = SubscriberManagerFactory.getSubscriberManager();
+            await subMan.init();
+            const subManPromise = subMan.begin();
+            await expect(subMan.searchForValue(dummy_command, RegExp('THIS SHOULD NEVER MATCH ANYTHING'), false)).to.eventually.be.rejected;
             await subManPromise;
         });
 
@@ -275,6 +311,33 @@ describe("SubscriberManager", function () {
                 await subMan.init();
                 await subMan.begin();
                 expect(logTraceStub.callCount).eq(1);
+            });
+
+            it("a warning is issued when unsubscribing a listener that doesn't exist", async function () {
+                //Uncomment this line to get logger output during this test
+                // LogHelper.configure(config)
+
+                const subMan = SubscriberManagerFactory.getSubscriberManager();
+
+                const logWarnStub = sandbox.spy(subscribersLogger, "warn");
+                expect(logWarnStub.callCount).eq(0);
+
+                // Unsubscribe a listener that wasn't subscribed originally
+                subMan.unsubscribe(new class implements ListenerService {
+                    name(): string {
+                        return "Dummy Listener Service";
+                    }
+
+                    canHandle(consoleLine: string): boolean {
+                        return false;
+                    }
+
+                    handleLine(consoleLine: string): Promise<void> {
+                        return new Promise((resolve, reject) => reject());
+                    }
+                });
+
+                expect(logWarnStub.callCount).eq(1);
             });
         });
 

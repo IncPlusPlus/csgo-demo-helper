@@ -135,19 +135,20 @@ export class SubscriberManager {
                      */
                     const subscriberCanHandleLine = this.subscribers[i].canHandle(line);
                     if (subscriberCanHandleLine) {
-                        this.subscriberLog.debug(`Selected listener '${this.subscribers[i].name()}' to handle line '${line}'.`);
+                        const selectedListener: ListenerService = this.subscribers[i];
+                        this.subscriberLog.debug(`Selected listener '${selectedListener.name()}' to handle line '${line}'.`);
                         //We've found a suitable method to handle the message
                         try {
                             //Can't run 'await this.subscribers[i].handleLine(line);' because this would cause a deadlock
-                            this.subscribers[i].handleLine(line)
+                            selectedListener.handleLine(line)
                                 .then(() => this.subscriberLog.debug(
-                                    `Listener '${this.subscribers[i]}' finished handling line '${line}'.`)
+                                    `Listener '${selectedListener.name()}' finished handling line '${line}'.`)
                                 ).catch(reason => {
-                                this.logListenerError(this.subscribers[i], line, reason);
+                                this.logListenerError(selectedListener, line, reason);
                             });
                         } catch (e) {
-                            this.logListenerError(this.subscribers[i], line, e);
-                            this.subscriberLog.error(`Additionally, this error was thrown in a non-async manner. Instead of taking the form of a rejected promise, this error was received because it was thrown from handleLine of ${this.subscribers[i]}. Please try to avoid this in the future.`);
+                            this.logListenerError(selectedListener, line, e);
+                            this.subscriberLog.error(`Additionally, this error was thrown in a non-async manner. Instead of taking the form of a rejected promise, this error was received because it was thrown from handleLine of ${selectedListener.name()}. Please try to avoid this in the future.`);
                         }
                         break;
                     }
@@ -215,7 +216,7 @@ export class SubscriberManager {
         this.subscribedCvarValues.push([cvarName, deferred]);
         this.sendMessage(cvarName);
         this.cvarSubscribersLog.debug(`Added '${cvarName}' to the cvar subscribers list.`);
-        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
+        return new TimeoutPromise(this.config).timeoutPromise(deferred.promise, `Request for Cvar '${cvarName}'`, false);
     }
 
     public searchForValue = (command: string | string[], regex: RegExp, isUserDecision: boolean, additionalDetailsAboutRequest?: string) => {
@@ -223,13 +224,13 @@ export class SubscriberManager {
         this.specialOutputGrabbers.push([regex, deferred]);
         this.sendMessage(command);
         this.valueListenersLog.debug(`Added a value grabber grabbing output from '${command}' to the grabber list.`);
-        return new TimeoutPromise().timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision, additionalDetailsAboutRequest);
+        return new TimeoutPromise(this.config).timeoutPromise(deferred.promise, `Request for response to command '${command}'`, isUserDecision, additionalDetailsAboutRequest);
     }
 
     public subscribe = (listener: ListenerService) => {
         //TODO: Maybe prevent adding duplicate listeners
         this.subscribers.push(listener);
-        this.subscriberLog.debug(`Added callback '${listener}' to the subscribers list.`);
+        this.subscriberLog.debug(`Added callback '${listener.name()}' to the subscribers list.`);
     }
 
     public unsubscribe = (listener: ListenerService) => {
@@ -237,12 +238,12 @@ export class SubscriberManager {
         if (index > -1) {
             this.subscribers.splice(index, 1);
         } else {
-            this.subscriberLog.warn(`Attempted to unsubscribe callback function '${listener}' but failed.`);
+            this.subscriberLog.warn(`Attempted to unsubscribe callback function '${listener.name()}' but failed.`);
         }
     }
 
     private logListenerError = (listener: ListenerService, consoleLineBeingHandled: string, reason: any) => {
-        this.subscriberLog.error(`Listener '${listener}' encountered an error handling line '${consoleLineBeingHandled}'.`);
+        this.subscriberLog.error(`Listener '${listener.name()}' encountered an error handling line '${consoleLineBeingHandled}'.`);
         this.subscriberLog.error(reason);
     }
 

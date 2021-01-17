@@ -7,6 +7,7 @@ import {ShowHelpMessageWhenAsked} from "./services/ShowHelpMessageWhenAsked";
 import {join} from "path";
 import {SubscriberManagerFactory} from "./utils/SubscriberManagerFactory";
 import {ConfigFactory} from "./utils/ConfigFactory";
+import {configure} from "log4js";
 
 const log = LogHelper.getLogger('Main');
 
@@ -19,13 +20,7 @@ const waitForUserInputThenExit = () => {
 }
 
 (async () => {
-    try {
-        LogHelper.configure(ConfigFactory.getConfigInstance().getConfig());
-    } catch (e) {
-        console.log(e);
-        console.log('Exited due to a fatal error. Please see above for details.');
-        waitForUserInputThenExit();
-    }
+    LogHelper.configure(ConfigFactory.getConfigInstance().getConfig());
     const subscriberManager = SubscriberManagerFactory.getSubscriberManager();
     if (!ConfigFactory.getConfigInstance().csgoExeExists()) {
         log.fatal(`Couldn't find CS:GO's executable at the path '${join(ConfigFactory.getConfigInstance().getConfig().csgo.csgo_demos_folder, "..", "csgo.exe")}'.`);
@@ -39,6 +34,13 @@ const waitForUserInputThenExit = () => {
     await subscriberManager.init();
     await subscriberManager.begin();
 })().catch(reason => {
+    configure({
+        appenders: {
+            out: {type: 'stdout'},
+            app: {type: 'file', filename: 'application.log'}
+        },
+        categories: {default: {appenders: ['out', 'app'], level: `info`}}
+    })
     log.fatal(reason);
     log.fatal('Exited due to a fatal error. Please see above for details.');
     waitForUserInputThenExit();
