@@ -42,7 +42,7 @@
     "log4js": "^6.3.0",
     "p-defer": "^3.0.0",
     "uuid": "^8.3.1",
-    "wait-on": "^5.2.0"
+    "wait-on": "^5.2.1"
   },
   "preferGlobal": true,
   "devDependencies": {
