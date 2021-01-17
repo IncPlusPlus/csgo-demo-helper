@@ -218,8 +218,11 @@ export class DemoRecordingHelper implements ListenerService {
             ConsoleHelper.padConsole(5);
             SubscriberManagerFactory.getSubscriberManager().sendMessage(`echo DemoHelper applied recording preferences and recorded a message in demo successfully!`);
             SubscriberManagerFactory.getSubscriberManager().sendMessage(thingsToPrintToConsole);
-        } else if (match![4]) {
+            // The below line WOULD be "else if (match![4])" but "else" is just fine as we already know which part of the RegExp matched by this point in the if/else block
+        } else {
             //Please start demo recording after current round is over.
+            DemoRecordingHelper.log.warn(`DemoHelper wasn't able to start recording immediately!`);
+            DemoRecordingHelper.log.warn(`DemoHelper was told by CS:GO to wait for the next round to begin before attempting to start recording.`);
             // noinspection SpellCheckingInspection
             SubscriberManagerFactory.getSubscriberManager().sendMessage(DemoRecordingHelper.RecordingStartMustBeDelayed);
             await SubscriberManagerFactory.getSubscriberManager().searchForValue('echo', DemoRecordingHelper.beginRecordingAfterNewRoundRegExp, false);
