@@ -1,5 +1,5 @@
-name-template: Version $NEXT_MINOR_VERSION
-tag-template: v$NEXT_MINOR_VERSION
+name-template: Version $NEXT_PATCH_VERSION
+tag-template: v$NEXT_PATCH_VERSION
 branches:
   - main
   - develop
@@ -35,4 +35,4 @@ change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 template: |
   $CHANGES
   ***
-  For full changes, see the [comparison between $PREVIOUS_TAG and $NEXT_MINOR_VERSION](https://github.com/IncPlusPlus/csgo-demo-helper/compare/$PREVIOUS_TAG...$NEXT_MINOR_VERSION)
+  For full changes, see the [comparison between $PREVIOUS_TAG and $NEXT_PATCH_VERSION](https://github.com/IncPlusPlus/csgo-demo-helper/compare/$PREVIOUS_TAG...$NEXT_PATCH_VERSION)
