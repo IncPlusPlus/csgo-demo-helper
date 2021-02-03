@@ -1,6 +1,7 @@
 # CS:GO Demo Helper
 [![codecov](https://codecov.io/gh/IncPlusPlus/csgo-demo-helper/branch/main/graph/badge.svg?token=A4WZAINZ1B)](https://codecov.io/gh/IncPlusPlus/csgo-demo-helper)
-![Build Status](https://github.com/IncPlusPlus/csgo-demo-helper/.github/workflows/codecov-test-suites.yml/badge.svg)
+![Run Test Suites](https://github.com/IncPlusPlus/csgo-demo-helper/workflows/Run%20Test%20Suites/badge.svg)
+[![OOOOOH! KILL 'EM!](https://img.shields.io/badge/0000-KILL%20EM-brightgreen?logo=counter-strike)](https://shields.io/)
 
 This is a CLI tool that I use when I play Counter-Strike: Global Offensive. It has multiple features that help me record
 POV demos when I'm playing competitive matches. For information on what drove me to make this, see
